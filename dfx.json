@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "skill-forge-backend": {
+      "main": "src/skill-forge-backend/main.mo",
+      "type": "motoko"
+    },
+    "skill-forge-frontend": {
+      "dependencies": [
+        "skill-forge-backend"
+      ],
+      "source": [
+        "src/skill-forge-frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "skill-forge-frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
