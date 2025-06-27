@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+/* Custom scrollbar */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Custom glow animation */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 212, 77, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 212, 77, 0.8),
+      0 0 30px rgba(255, 212, 77, 0.4);
+  }
+}
+
+/* Floating animation */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Background gradient animation */
+body {
+  background: linear-gradient(135deg, #020724 0%, #051739 100%);
+  min-height: 100vh;
+}
+
+/* Custom focus styles */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #ffd44d;
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background-color: rgba(255, 212, 77, 0.3);
+  color: white;
+}
+
+/* SkillForge Enhanced Styles */
+.skill-card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(255, 212, 77, 0.3);
+}
+
+.connection-line {
+  stroke-dasharray: 5, 5;
+  animation: dash 2s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+@keyframes particle-float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(0.5);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) scale(1);
+    opacity: 1;
+  }
+}
+
+.particle {
+  animation: particle-float 3s ease-in-out infinite;
+}
+
+/* Skill Progress Animation */
+@keyframes skill-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--progress-width);
+  }
+}
+
+.skill-progress-bar {
+  animation: skill-progress 2s ease-out forwards;
+}
+
+/* Enhanced Glow Effects */
+.enhanced-glow {
+  box-shadow: 0 0 20px rgba(255, 212, 77, 0.3), 0 0 40px rgba(255, 212, 77, 0.2),
+    inset 0 0 20px rgba(255, 212, 77, 0.1);
+}
+
+.skill-forge-container {
+  background: radial-gradient(
+      circle at 30% 20%,
+      rgba(255, 212, 77, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 70% 80%,
+      rgba(127, 97, 255, 0.1) 0%,
+      transparent 50%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+}
+
+/* Custom scrollbar for skill tree */
+.skill-tree-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.skill-tree-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skill-tree-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 212, 77, 0.5);
+  border-radius: 4px;
+}
+
+.skill-tree-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 212, 77, 0.7);
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  .roadmap-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .skill-node {
+    width: 60px;
+    height: 60px;
+  }
+
+  .skill-tree-canvas {
+    min-width: 400px;
+    min-height: 600px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skill-tree-canvas {
+    min-width: 350px;
+    min-height: 500px;
+  }
+
+  .skill-node {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/* Smooth animations */
+.skill-path-animation {
+  transition: all 0.3s ease-in-out;
+}
+
+.glow-effect {
+  filter: drop-shadow(0 0 8px rgba(255, 212, 77, 0.6));
+}
