@@ -1,6 +1,7 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Hammer, Mail, Github, Twitter, MessageSquare } from 'lucide-react';
+import { Github, Hammer, MessageSquare, Twitter } from 'lucide-react';
+import React from 'react';
+import ICPLogo from '../../public/icp-logo.svg';
 
 const Footer: React.FC = () => {
   const footerLinks = {
@@ -8,12 +9,6 @@ const Footer: React.FC = () => {
       { label: 'Overview', href: '#overview' },
       { label: 'Team', href: '#team' },
       { label: 'Contact', href: '#contact' },
-    ],
-    product: [
-      { label: 'How to Play', href: '#guide' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'News', href: '#news' },
-      { label: 'FAQ', href: '#faq' },
     ],
     legal: [
       { label: 'Privacy Policy', href: '#privacy' },
@@ -53,7 +48,7 @@ const Footer: React.FC = () => {
               </div>
               <span className="text-2xl font-bold text-white">SkillForge</span>
             </div>
-            
+
             <p className="text-gray-300 text-sm leading-relaxed mb-6">
               Platform pembelajaran AI-powered yang membantu Anda membangun karir impian dengan skill terverifikasi blockchain.
             </p>
@@ -99,27 +94,6 @@ const Footer: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h3 className="text-white font-semibold mb-6">Product</h3>
-            <ul className="space-y-3">
-              {footerLinks.product.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.href}
-                    className="text-gray-300 hover:text-gold transition-colors duration-300 text-sm"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             <h3 className="text-white font-semibold mb-6">Legal</h3>
@@ -135,25 +109,6 @@ const Footer: React.FC = () => {
                 </li>
               ))}
             </ul>
-
-            {/* Newsletter */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Newsletter</h4>
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 bg-white/10 border border-white/20 rounded-l-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-gold/50 text-sm"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="bg-gold text-deep-navy px-4 py-2 rounded-r-lg font-semibold hover:bg-gold/90 transition-colors text-sm"
-                >
-                  Subscribe
-                </motion.button>
-              </div>
-            </div>
           </motion.div>
         </div>
 
@@ -168,11 +123,11 @@ const Footer: React.FC = () => {
           <div className="text-gray-300 text-sm">
             © 2025 SkillForge. All rights reserved.
           </div>
-          
+
           <div className="flex items-center space-x-4 text-sm text-gray-300">
             <span>Powered by</span>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-gradient-to-r from-purple to-gold rounded-full" />
+              <img src={ICPLogo} alt="ICP Logo" className="w-5 h-5" />
               <span className="text-white font-semibold">Internet Computer</span>
             </div>
           </div>

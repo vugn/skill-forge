@@ -16,7 +16,6 @@ import { Button } from './ui';
 const NAV_LINKS: NavLink[] = [
   { to: 'overview', label: 'Overview' },
   { to: 'features', label: 'Features' },
-  { to: 'icp-advantage', label: 'ICP Advantage' },
   { to: 'faq', label: 'FAQ' },
 ];
 
@@ -58,8 +57,8 @@ const Navbar: React.FC = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'bg-deep-navy/90 backdrop-blur-md border-b border-white/10'
-          : 'bg-transparent'
+        ? 'bg-deep-navy/90 backdrop-blur-md border-b border-white/10'
+        : 'bg-transparent'
         }`}
     >
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">

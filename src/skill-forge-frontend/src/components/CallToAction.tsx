@@ -1,15 +1,36 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Hammer, Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowRight, Hammer, Play, Sparkles } from 'lucide-react';
+import React from 'react';
+import ICPLogo from '../../public/icp-logo.svg';
+import { useAuth } from '../contexts/AuthContext';
+
 
 const CallToAction: React.FC = () => {
+  const { login } = useAuth();
+
+  /**
+   * Handle Get Started button click
+   */
+  const handleGetStarted = async (): Promise<void> => {
+    try {
+      const success = await login();
+      if (!success) {
+        console.error('Login failed');
+        alert('Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Login failed. Please try again.');
+    }
+  };
+
   return (
     <section className="py-24 lg:py-32 bg-gradient-to-br from-purple-900 via-purple-800 to-deep-navy relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        
+
         {/* Animated Particles */}
         <div className="absolute inset-0">
           {[...Array(6)].map((_, i) => (
@@ -73,7 +94,7 @@ const CallToAction: React.FC = () => {
               </h2>
 
               <p className="text-lg text-gray-300 mb-8 max-w-lg mx-auto lg:mx-0">
-                Bergabunglah dengan ribuan learners yang telah mentransformasi karir mereka. 
+                Bergabunglah dengan ribuan learners yang telah mentransformasi karir mereka.
                 Mulai forge skill impian Anda hari ini.
               </p>
 
@@ -81,18 +102,22 @@ const CallToAction: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
+                  onClick={handleGetStarted}
                   className="group bg-gold text-deep-navy px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gold/90 transition-all duration-300 flex items-center justify-center space-x-2"
                 >
+                  <img src={ICPLogo} alt="ICP Logo" className="w-8 h-8" />
+
                   <span>Start Forging</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
                   className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:border-gold/50 hover:bg-gold/10 transition-all duration-300"
                 >
-                  Try Free Demo
+                  <Play className="w-5 h-5" />
+                  <span>Watch Demo</span>
                 </motion.button>
               </div>
 
@@ -125,12 +150,12 @@ const CallToAction: React.FC = () => {
                 {/* Anvil and Hammer Scene */}
                 <div className="text-center">
                   <motion.div
-                    animate={{ 
+                    animate={{
                       rotate: [0, -15, 0],
                       y: [0, -5, 0]
                     }}
-                    transition={{ 
-                      duration: 2, 
+                    transition={{
+                      duration: 2,
                       repeat: Infinity,
                       repeatType: "reverse"
                     }}
@@ -139,7 +164,7 @@ const CallToAction: React.FC = () => {
                     <div className="w-32 h-32 bg-gradient-to-br from-gold to-yellow-400 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                       <Hammer className="w-16 h-16 text-deep-navy" />
                     </div>
-                    
+
                     {/* Spark Effects */}
                     {[...Array(8)].map((_, i) => (
                       <motion.div

@@ -3,9 +3,12 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Brain, Code2, Link, Play, Rocket, Sparkles, Star, Target, Trophy, Zap } from 'lucide-react';
 import React from 'react';
 import ICPLogo from '../../public/icp-logo.svg';
+import { useAuth } from '../contexts/AuthContext';
 
 
 const Hero: React.FC = () => {
+  const { login } = useAuth();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -20,6 +23,22 @@ const Hero: React.FC = () => {
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: { y: 0, opacity: 1 },
+  };
+
+  /**
+   * Handle Get Started button click
+   */
+  const handleGetStarted = async (): Promise<void> => {
+    try {
+      const success = await login();
+      if (!success) {
+        console.error('Login failed');
+        alert('Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Login failed. Please try again.');
+    }
   };
 
 
@@ -61,6 +80,7 @@ const Hero: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
+                onClick={handleGetStarted}
                 className="group bg-gold text-deep-navy px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gold/90 transition-all duration-300 flex items-center space-x-2"
               >
                 <img src={ICPLogo} alt="ICP Logo" className="w-8 h-8" />
