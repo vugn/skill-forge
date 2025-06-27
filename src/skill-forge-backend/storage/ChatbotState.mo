@@ -4,7 +4,6 @@ import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Int "mo:base/Int";       
 import Float "mo:base/Float";    
-import Char "mo:base/Char";      
 import ChatbotTypes "../types/Chatbot";
 
 module {
