@@ -357,7 +357,7 @@ actor SkillForge {
     };
 
     // Complete a skill and unlock dependencies
-    public shared (msg) func completeSkill(skillTreeId : Text, skillId : Text) : async Result.Result<Types.SkillTree, Text> {
+    public shared (msg) func completeSkill(skillTreeId : Text, skillId : Text) : async Result.Result<{ skillTree : Types.SkillTree; expGained : Nat; levelUpResult : [Types.LevelUpResult] }, Text> {
         let userId = msg.caller;
         let progressKey = SkillTree.createProgressKey(userId, skillTreeId);
 
@@ -374,12 +374,21 @@ actor SkillForge {
                         // Update skill tree
                         skillTrees := Trie.put(skillTrees, textKey(skillTreeId), Text.equal, updatedTree).0;
 
+                        // Find the completed skill to get its points
+                        var skillPoints : Nat = 50; // Default points
+                        for (skill in updatedTree.skills.vals()) {
+                            if (skill.id == skillId) {
+                                skillPoints := skill.maxPoints;
+                            };
+                        };
+
                         // Update user progress
                         let updatedProgress = switch (currentProgress) {
                             case (?progress) {
                                 {
                                     progress with
                                     completedSkills = Array.append([skillId], progress.completedSkills);
+                                    totalPoints = progress.totalPoints + skillPoints;
                                     lastUpdated = Time.now();
                                 };
                             };
@@ -389,7 +398,7 @@ actor SkillForge {
                                     skillTreeId = skillTreeId;
                                     completedSkills = [skillId];
                                     questProgress = [];
-                                    totalPoints = 0;
+                                    totalPoints = skillPoints;
                                     lastUpdated = Time.now();
                                 };
                             };
@@ -397,7 +406,24 @@ actor SkillForge {
 
                         userProgress := Trie.put(userProgress, textKey(progressKey), Text.equal, updatedProgress).0;
 
-                        #ok(updatedTree);
+                        // Award experience points for skill completion
+                        let expGained = skillPoints;
+                        var levelUpResult : [Types.LevelUpResult] = [];
+                        
+                        switch (await addExperience(expGained, "skill_completion")) {
+                            case (#ok(levelResult)) {
+                                levelUpResult := [levelResult];
+                            };
+                            case (#err(_)) {
+                                // Continue even if XP addition fails
+                            };
+                        };
+
+                        #ok({
+                            skillTree = updatedTree;
+                            expGained = expGained;
+                            levelUpResult = levelUpResult;
+                        });
                     };
                     case (#err(error)) {
                         let errorMessage = switch (error) {
@@ -418,7 +444,7 @@ actor SkillForge {
     };
 
     // Submit quest answers and get score
-    public shared (msg) func submitQuestAnswers(questId : Text, answers : [Nat]) : async Result.Result<{ score : Nat; passed : Bool; totalQuestions : Nat }, Text> {
+    public shared (msg) func submitQuestAnswers(questId : Text, answers : [Nat]) : async Result.Result<{ score : Nat; passed : Bool; totalQuestions : Nat; expGained : Nat; levelUpResult : [Types.LevelUpResult] }, Text> {
         let _userId = msg.caller;
 
         switch (Trie.find(quests, textKey(questId), Text.equal)) {
@@ -439,10 +465,32 @@ actor SkillForge {
                 let score = correctAnswers * 100 / totalQuestions;
                 let passed = Float.fromInt(score) >= (quest.passingThreshold * 100.0);
 
+                var expGained : Nat = 0;
+                var levelUpResult : [Types.LevelUpResult] = [];
+
+                // Award experience points if quest is passed
+                if (passed) {
+                    // Calculate XP based on quest points and score
+                    let baseExp = quest.points;
+                    expGained := (baseExp * score) / 100;
+                    
+                    // Add experience to user
+                    switch (await addExperience(expGained, "quest_completion")) {
+                        case (#ok(levelResult)) {
+                            levelUpResult := [levelResult];
+                        };
+                        case (#err(_)) {
+                            // Continue even if XP addition fails
+                        };
+                    };
+                };
+
                 #ok({
                     score = score;
                     passed = passed;
                     totalQuestions = totalQuestions;
+                    expGained = expGained;
+                    levelUpResult = levelUpResult;
                 });
             };
             case (null) { #err("Quest not found") };

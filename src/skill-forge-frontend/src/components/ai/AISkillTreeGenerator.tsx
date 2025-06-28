@@ -20,7 +20,6 @@ import {
     Package,
     Palette,
     PenTool,
-    Play,
     Server,
     Settings,
     Shield,
@@ -36,6 +35,45 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { canisterService } from '../../services/canister';
 import { authService } from '../../services/auth';
 import { useAuth } from '../../hooks/useAuth';
+
+// --- CUSTOM STYLES FOR CARD EFFECTS ---
+const cardStyles = `
+    .animate-spin-slow {
+        animation: spin 8s linear infinite;
+    }
+    
+    .bg-gradient-radial {
+        background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+    }
+    
+    .bg-gradient-conic {
+        background: conic-gradient(var(--tw-gradient-stops));
+    }
+    
+    .perspective-1000 {
+        perspective: 1000px;
+    }
+    
+    .animation-delay-200 {
+        animation-delay: 0.2s;
+    }
+    
+    .animation-delay-500 {
+        animation-delay: 0.5s;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = cardStyles;
+    document.head.appendChild(styleSheet);
+}
 
 // --- ICON MAPPING ---
 const ICON_MAP = {
@@ -276,119 +314,303 @@ const SkillCard: React.FC<{
 }> = ({ skill, onSkillClick, isPreview }) => {
     const IconComponent = ICON_MAP[skill.iconName] || Code;
 
+    // Enhanced rarity system with randomization
+    const getRarity = () => {
+        if (skill.isCompleted) return 'legendary';
+        
+        // Use skill ID as seed for consistent randomization
+        const seed = skill.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        const random = (seed % 100) / 100;
+        
+        if (skill.dependencies.length >= 3) {
+            // High dependency skills have higher chance for epic/rare
+            if (random < 0.3) return 'epic';
+            if (random < 0.7) return 'rare';
+            return 'common';
+        } else if (skill.dependencies.length >= 1) {
+            // Medium dependency skills
+            if (random < 0.15) return 'epic';
+            if (random < 0.5) return 'rare';
+            return 'common';
+        } else {
+            // No dependencies - mostly common with small chance for higher rarity
+            if (random < 0.05) return 'epic';
+            if (random < 0.2) return 'rare';
+            return 'common';
+        }
+    };
+
+    const rarity = getRarity();
+    
     return (
         <motion.div
-            className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 hover:border-slate-600 transition-all duration-300 cursor-pointer group"
+            className="relative w-full aspect-[2.5/3.5] cursor-pointer group perspective-1000"
             onClick={() => !isPreview && onSkillClick(skill)}
-            whileHover={{ scale: skill.isUnlocked ? 1.02 : 1 }}
-            whileTap={{ scale: skill.isUnlocked ? 0.98 : 1 }}
+            whileHover={{ 
+                scale: skill.isUnlocked ? 1.08 : 1,
+                rotateY: skill.isUnlocked ? 8 : 0,
+                rotateX: skill.isUnlocked ? 2 : 0,
+                z: skill.isUnlocked ? 100 : 0
+            }}
+            whileTap={{ scale: skill.isUnlocked ? 0.92 : 1 }}
             style={{
+                filter: skill.isUnlocked ? 'none' : 'grayscale(50%) brightness(0.6)',
                 opacity: skill.isUnlocked ? 1 : 0.7,
-                filter: skill.isUnlocked ? 'none' : 'grayscale(50%)',
             }}
         >
-            {/* Card Header */}
-            <div className="flex items-center justify-between mb-3">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    skill.isCompleted
-                        ? 'bg-gradient-to-br from-green-500/30 to-green-600/30 border-2 border-green-400'
-                        : skill.isUnlocked
-                            ? 'bg-gradient-to-br from-yellow-500/30 to-orange-500/30 border-2 border-yellow-400'
-                            : 'bg-gradient-to-br from-slate-700/60 to-slate-800/60 border-2 border-slate-600'
-                }`}>
-                    <IconComponent
-                        className={`w-6 h-6 ${
-                            skill.isCompleted ? 'text-green-300' :
-                            skill.isUnlocked ? 'text-yellow-300' :
-                            'text-slate-500'
-                        }`}
-                    />
-                </div>
+            {/* Card Shadow - Creates 3D depth */}
+            <div className="absolute inset-0 bg-black/30 rounded-2xl translate-y-3 translate-x-2 group-hover:translate-y-4 group-hover:translate-x-3 transition-transform duration-300 -z-10" />
+            
+            {/* Outer Card Frame */}
+            <div className={`absolute inset-0 rounded-2xl p-[3px] transition-all duration-500 ${
+                rarity === 'legendary' 
+                    ? 'bg-gradient-to-br from-yellow-300 via-orange-400 to-red-500 shadow-2xl shadow-yellow-400/40 animate-pulse' 
+                    : rarity === 'epic'
+                        ? 'bg-gradient-to-br from-purple-400 via-fuchsia-500 to-pink-500 shadow-xl shadow-purple-400/30'
+                        : rarity === 'rare'
+                            ? 'bg-gradient-to-br from-blue-400 via-cyan-400 to-indigo-500 shadow-lg shadow-blue-400/25'
+                            : 'bg-gradient-to-br from-slate-500 via-slate-600 to-slate-700 shadow-md shadow-slate-600/20'
+            }`}>
+                
+                {/* Inner Card Body */}
+                <div className="relative h-full w-full rounded-[18px] overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-600">
+                    
+                    {/* Card Header - Ornate Title Bar */}
+                    <div className={`relative px-4 py-3 text-center border-b-2 ${
+                        rarity === 'legendary'
+                            ? 'bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 border-red-700 text-yellow-100'
+                            : rarity === 'epic'
+                                ? 'bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 border-pink-700 text-purple-100'
+                                : rarity === 'rare'
+                                    ? 'bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-700 border-indigo-700 text-blue-100'
+                                    : 'bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800 border-slate-800 text-slate-100'
+                    }`}>
+                        
+                        {/* Ornate Corner Decorations */}
+                        <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-white/50 rounded-tl-lg" />
+                        <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-white/50 rounded-tr-lg" />
+                        
+                        <h4 className="text-sm font-bold tracking-wider drop-shadow-lg">
+                            {skill.name.toUpperCase()}
+                        </h4>
+                        
+                        {/* Rarity Stars */}
+                        <div className="absolute top-1 right-4 flex space-x-0.5">
+                            {Array.from({ length: rarity === 'legendary' ? 5 : rarity === 'epic' ? 4 : rarity === 'rare' ? 3 : 2 }).map((_, i) => (
+                                <Star key={i} className="w-2.5 h-2.5 text-yellow-300 fill-current drop-shadow-md" />
+                            ))}
+                        </div>
+                    </div>
 
-                {/* Status Badge */}
-                <div className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center space-x-1 ${
-                    skill.isCompleted
-                        ? 'bg-green-500/20 text-green-300 border border-green-500/50'
-                        : skill.isUnlocked
-                            ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
-                            : 'bg-slate-500/20 text-slate-400 border border-slate-500/50'
-                }`}>
-                    {skill.isCompleted ? (
+                    {/* Card Artwork Section */}
+                    <div className="relative flex-1 p-6 flex flex-col items-center justify-center">
+                        
+                        {/* Background Art Pattern */}
+                        <div className={`absolute inset-0 opacity-20 ${
+                            rarity === 'legendary'
+                                ? 'bg-gradient-radial from-yellow-300 via-orange-300 to-transparent'
+                                : rarity === 'epic'
+                                    ? 'bg-gradient-radial from-purple-300 via-fuchsia-300 to-transparent'
+                                    : rarity === 'rare'
+                                        ? 'bg-gradient-radial from-blue-300 via-cyan-300 to-transparent'
+                                        : 'bg-gradient-radial from-slate-400 via-slate-500 to-transparent'
+                        }`} />
+                        
+                        {/* Hexagonal Frame for Icon */}
+                        <div className={`relative mb-4 ${
+                            rarity === 'legendary' ? 'animate-pulse' : ''
+                        }`}>
+                            {/* Hexagon Background */}
+                            <div className={`w-20 h-20 relative ${
+                                rarity === 'legendary'
+                                    ? 'bg-gradient-to-br from-yellow-300 via-orange-400 to-red-500 shadow-lg shadow-yellow-500/50'
+                                    : rarity === 'epic'
+                                        ? 'bg-gradient-to-br from-purple-300 via-fuchsia-400 to-pink-500 shadow-lg shadow-purple-500/40'
+                                        : rarity === 'rare'
+                                            ? 'bg-gradient-to-br from-blue-300 via-cyan-400 to-indigo-500 shadow-lg shadow-blue-500/40'
+                                            : 'bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 shadow-md shadow-slate-500/30'
+                            }`}
+                            style={{
+                                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                            }}>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <IconComponent className={`w-10 h-10 drop-shadow-lg ${
+                                        rarity === 'legendary' ? 'text-red-800' :
+                                        rarity === 'epic' ? 'text-purple-800' :
+                                        rarity === 'rare' ? 'text-blue-800' :
+                                        'text-slate-800'
+                                    }`} />
+                                </div>
+                            </div>
+                            
+                            {/* Glowing Ring Effect for Higher Rarities */}
+                            {rarity !== 'common' && (
+                                <div className={`absolute inset-0 rounded-full animate-spin-slow ${
+                                    rarity === 'legendary' ? 'bg-gradient-conic from-yellow-400 via-orange-500 to-red-500' :
+                                    rarity === 'epic' ? 'bg-gradient-conic from-purple-400 via-fuchsia-500 to-pink-500' :
+                                    'bg-gradient-conic from-blue-400 via-cyan-500 to-indigo-500'
+                                }`}
+                                style={{
+                                    mask: 'radial-gradient(circle at center, transparent 60%, black 61%, black 65%, transparent 66%)',
+                                    WebkitMask: 'radial-gradient(circle at center, transparent 60%, black 61%, black 65%, transparent 66%)'
+                                }} />
+                            )}
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 border-2 ${
+                            skill.isCompleted
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-400 shadow-lg shadow-green-500/50'
+                                : skill.isUnlocked
+                                    ? `bg-gradient-to-r ${
+                                        rarity === 'legendary' ? 'from-yellow-500 to-orange-600 text-white border-yellow-400' :
+                                        rarity === 'epic' ? 'from-purple-500 to-fuchsia-600 text-white border-purple-400' :
+                                        rarity === 'rare' ? 'from-blue-500 to-cyan-600 text-white border-blue-400' :
+                                        'from-slate-500 to-slate-600 text-white border-slate-400'
+                                    }`
+                                    : 'bg-gradient-to-r from-slate-700 to-slate-800 text-slate-300 border-slate-600'
+                        }`}>
+                            {skill.isCompleted ? (
+                                <>
+                                    <CheckCircle className="w-3 h-3" />
+                                    <span>MASTERED</span>
+                                </>
+                            ) : skill.isUnlocked ? (
+                                <>
+                                    <Zap className="w-3 h-3" />
+                                    <span>READY</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Lock className="w-3 h-3" />
+                                    <span>SEALED</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Card Description Box */}
+                    <div className="px-4 pb-4">
+                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-3 shadow-inner">
+                            <p className="text-xs text-slate-200 text-center leading-relaxed" style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                            }}>
+                                {skill.description}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Card Stats Panel */}
+                    <div className="px-4 pb-4">
+                        <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 rounded-lg p-3 border border-slate-700">
+                            {/* XP Stats */}
+                            <div className="flex items-center justify-between text-xs mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <div className={`w-3 h-3 rounded-full ${
+                                        rarity === 'legendary' ? 'bg-yellow-400 animate-pulse' :
+                                        rarity === 'epic' ? 'bg-purple-400' :
+                                        rarity === 'rare' ? 'bg-blue-400' : 'bg-slate-400'
+                                    }`} />
+                                    <span className="font-bold text-white tracking-wider">
+                                        {rarity.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div className="text-yellow-400 font-mono font-bold">
+                                    {skill.currentPoints}/{skill.maxPoints} XP
+                                </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden border border-slate-600">
+                                <div
+                                    className={`h-full transition-all duration-700 ${
+                                        skill.isCompleted
+                                            ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-green-600'
+                                            : rarity === 'legendary'
+                                                ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500'
+                                                : rarity === 'epic'
+                                                    ? 'bg-gradient-to-r from-purple-400 via-fuchsia-500 to-pink-500'
+                                                    : rarity === 'rare'
+                                                        ? 'bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-500'
+                                                        : 'bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600'
+                                    }`}
+                                    style={{ 
+                                        width: `${Math.min(100, (skill.currentPoints / skill.maxPoints) * 100)}%` 
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Card Footer - Action Zone */}
+                    <div className={`px-3 py-2 text-center text-xs border-t-2 ${
+                        rarity === 'legendary'
+                            ? 'bg-gradient-to-r from-yellow-700 via-orange-700 to-red-700 border-red-800 text-yellow-100'
+                            : rarity === 'epic'
+                                ? 'bg-gradient-to-r from-purple-700 via-fuchsia-700 to-pink-700 border-pink-800 text-purple-100'
+                                : rarity === 'rare'
+                                    ? 'bg-gradient-to-r from-blue-700 via-cyan-700 to-indigo-800 border-indigo-800 text-blue-100'
+                                    : 'bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 border-slate-900 text-slate-100'
+                    }`}>
+                        {skill.dependencies.length > 0 ? (
+                            <div className="font-semibold">
+                                🔒 Requires {skill.dependencies.length} prerequisites
+                            </div>
+                        ) : skill.isCompleted ? (
+                            <div className="font-bold text-green-300">
+                                ✨ SKILL MASTERED ✨
+                            </div>
+                        ) : skill.isUnlocked ? (
+                            <div className="font-semibold">
+                                ⚡ Click to start quest
+                            </div>
+                        ) : (
+                            <div className="font-semibold">
+                                📚 Ready to learn
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Holographic Foil Effect */}
+                    {rarity !== 'common' && skill.isUnlocked && (
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none ${
+                            rarity === 'legendary'
+                                ? 'bg-gradient-to-br from-yellow-400/20 via-orange-300/10 to-red-400/20'
+                                : rarity === 'epic'
+                                    ? 'bg-gradient-to-br from-purple-400/20 via-fuchsia-300/10 to-pink-400/20'
+                                    : 'bg-gradient-to-br from-blue-400/20 via-cyan-300/10 to-indigo-400/20'
+                        }`} />
+                    )}
+
+                    {/* Shimmer Effect for Activated Cards */}
+                    {skill.isUnlocked && !skill.isCompleted && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out pointer-events-none" />
+                    )}
+
+                    {/* Legendary Particle Effects */}
+                    {rarity === 'legendary' && skill.isUnlocked && (
                         <>
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Completed</span>
+                            <div className="absolute top-3 right-3 w-1 h-1 bg-yellow-400 rounded-full animate-ping" />
+                            <div className="absolute top-5 right-6 w-1 h-1 bg-orange-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
+                            <div className="absolute top-7 right-4 w-1 h-1 bg-red-400 rounded-full animate-ping" style={{ animationDelay: '1s' }} />
                         </>
-                    ) : skill.isUnlocked ? (
-                        <>
-                            <Play className="w-3 h-3" />
-                            <span>Available</span>
-                        </>
-                    ) : (
-                        <>
-                            <Lock className="w-3 h-3" />
-                            <span>Locked</span>
-                        </>
+                    )}
+
+                    {/* Lock Overlay for Unavailable Skills */}
+                    {!skill.isUnlocked && (
+                        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center rounded-[18px]">
+                            <div className="text-center">
+                                <Lock className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                                <div className="text-sm font-bold text-slate-300">LOCKED</div>
+                                <div className="text-xs text-slate-400 mt-1">Complete prerequisites</div>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
-
-            {/* Skill Name & Description */}
-            <div className="mb-3">
-                <h4 className="text-lg font-semibold text-white mb-1 group-hover:text-yellow-300 transition-colors">
-                    {skill.name}
-                </h4>
-                <p className="text-sm text-slate-400" style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
-                }}>
-                    {skill.description}
-                </p>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-3">
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                    <span>Progress</span>
-                    <span>{skill.currentPoints}/{skill.maxPoints} pts</span>
-                </div>
-                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                            skill.isCompleted
-                                ? 'bg-gradient-to-r from-green-400 to-green-500'
-                                : skill.isUnlocked
-                                    ? 'bg-gradient-to-r from-yellow-400 to-orange-400'
-                                    : 'bg-slate-600'
-                        }`}
-                        style={{ 
-                            width: `${Math.min(100, (skill.currentPoints / skill.maxPoints) * 100)}%` 
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* Dependencies */}
-            {skill.dependencies.length > 0 && (
-                <div className="text-xs text-slate-500">
-                    <span>Requires: {skill.dependencies.length} prerequisite(s)</span>
-                </div>
-            )}
-
-            {/* Action Hint */}
-            {skill.isUnlocked && !skill.isCompleted && !isPreview && (
-                <div className="mt-3 text-center">
-                    <div className="text-xs text-yellow-400 font-medium animate-pulse">
-                        Click to start quest →
-                    </div>
-                </div>
-            )}
-
-            {/* Pulsing Effect for Available Skills */}
-            {skill.isUnlocked && !skill.isCompleted && (
-                <div className="absolute inset-0 rounded-xl border-2 border-yellow-400/30 animate-pulse pointer-events-none" />
-            )}
         </motion.div>
     );
 };
@@ -526,7 +748,7 @@ const SkillTreeGrid: React.FC<SkillTreeCanvasProps> = ({
 
 // --- MAIN COMPONENT ---
 const AISkillTreeGenerator: React.FC = () => {
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, refreshUserProfile } = useAuth();
     const [input, setInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedTrees, setGeneratedTrees] = useState<SkillTree[]>([]);
@@ -684,15 +906,68 @@ const AISkillTreeGenerator: React.FC = () => {
                     );
 
                     if (questResult.passed) {
+                        // Complete the skill to unlock dependencies and get additional XP
+                        try {
+                            // Find which skill tree this quest belongs to
+                            // For now, we'll need to find the skill tree that contains this quest
+                            const currentTrees = generatedTrees.filter(tree => 
+                                tree.skills.some(skill => skill.questId === activeQuest.id)
+                            );
+                            
+                            if (currentTrees.length > 0) {
+                                const skillTree = currentTrees[0];
+                                const skill = skillTree.skills.find(s => s.questId === activeQuest.id);
+                                
+                                if (skill) {
+                                    const skillResult = await canisterService.completeSkill(skillTree.id, skill.id);
+                                    
+                                    if (skillResult.expGained > 0) {
+                                        questResult.expGained = BigInt(Number(questResult.expGained) + Number(skillResult.expGained));
+                                    }
+                                    
+                                    if (skillResult.levelUpResult && skillResult.levelUpResult.length > 0) {
+                                        const skillLevelUp = skillResult.levelUpResult[0];
+                                        if (skillLevelUp && skillLevelUp.leveledUp) {
+                                            if (!questResult.levelUpResult || questResult.levelUpResult.length === 0) {
+                                                questResult.levelUpResult = skillResult.levelUpResult;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (skillError) {
+                            console.error('Failed to complete skill:', skillError);
+                            // Continue even if skill completion fails
+                        }
+                        
                         // Update skill trees with completed skill
                         await loadUserSkillTrees();
+                        
+                        // Refresh user profile to update XP/Level in UI
+                        try {
+                            await refreshUserProfile();
+                        } catch (error) {
+                            console.error('Failed to refresh user profile:', error);
+                        }
+                        
+                        // Show success message with XP and level info
+                        let successMessage = `🎉 Quest Completed!\nScore: ${Number(questResult.score)}/${Number(questResult.totalQuestions)}`;
+                        
+                        if (questResult.expGained > 0) {
+                            successMessage += `\n💰 +${Number(questResult.expGained)} XP gained!`;
+                        }
+                        
+                        if (questResult.levelUpResult && questResult.levelUpResult.length > 0) {
+                            const levelUp = questResult.levelUpResult[0];
+                            if (levelUp && levelUp.leveledUp) {
+                                successMessage += `\n🎊 LEVEL UP! You are now level ${Number(levelUp.newLevel)}!`;
+                            }
+                        }
+                        
+                        alert(successMessage);
+                    } else {
+                        alert(`❌ Quest Failed\nScore: ${Number(questResult.score)}/${Number(questResult.totalQuestions)}\nTry again to earn XP!`);
                     }
-
-                    // Show completion message (you can enhance this UI)
-                    alert(questResult.passed ? 
-                        `Quest passed! Score: ${questResult.score}/${questResult.totalQuestions}` :
-                        `Quest failed. Score: ${questResult.score}/${questResult.totalQuestions}`
-                    );
                 } catch (error) {
                     console.error('Failed to submit quest:', error);
                     setError('Failed to submit quest results. Please try again.');
@@ -701,7 +976,7 @@ const AISkillTreeGenerator: React.FC = () => {
                 setActiveQuest(null);
             }
         }, 2000);
-    }, [selectedAnswer, activeQuest, questAnswers, currentQuestionIndex, loadUserSkillTrees]);
+    }, [selectedAnswer, activeQuest, questAnswers, currentQuestionIndex, loadUserSkillTrees, generatedTrees, refreshUserProfile]);
 
     const handleAcceptTree = useCallback(async (tree: SkillTree) => {
         try {
@@ -976,7 +1251,7 @@ const AISkillTreeGenerator: React.FC = () => {
 
                                 <div className="bg-slate-700/30 rounded-xl p-6 text-center">
                                     <h4 className="text-lg font-semibold text-white mb-2">Ready for the challenge?</h4>
-                                    <p className="text-slate-400 text-sm mb-6">
+                                    <p className="text-slate-300 text-sm mb-6">
                                         Complete the quest to master this skill and unlock new abilities.
                                     </p>
                                     <button

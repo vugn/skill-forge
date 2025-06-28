@@ -62,6 +62,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   /**
+   * Refresh user profile from backend
+   */
+  const refreshUserProfile = async (): Promise<void> => {
+    if (isAuthenticated) {
+      await loadUserProfile();
+    }
+  };
+
+  /**
    * Login with Internet Identity
    */
   const login = async (): Promise<boolean> => {
@@ -136,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     updateUser,
+    refreshUserProfile,
     loading,
     checkingProfile,
   };

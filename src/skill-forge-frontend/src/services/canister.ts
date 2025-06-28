@@ -43,6 +43,20 @@ export interface BackendLevelUpResult {
     newLevelInfo: BackendLevelInfo;
 }
 
+export interface QuestResult {
+    score: bigint;
+    passed: boolean;
+    totalQuestions: bigint;
+    expGained: bigint;
+    levelUpResult: BackendLevelUpResult[];
+}
+
+export interface SkillCompletionResult {
+    skillTree: any; // Will be replaced with proper SkillTree type
+    expGained: bigint;
+    levelUpResult: BackendLevelUpResult[];
+}
+
 export interface AuthResult {
     user: BackendUser;
     isNewUser: boolean;
@@ -298,7 +312,7 @@ export class CanisterService {
         }
     }
 
-    async submitQuestAnswers(questId: string, answers: bigint[]): Promise<any> {
+    async submitQuestAnswers(questId: string, answers: bigint[]): Promise<QuestResult> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
@@ -318,6 +332,20 @@ export class CanisterService {
         }
 
         return await this.actor.getUserSkillProgress(skillTreeId);
+    }
+
+    async completeSkill(skillTreeId: string, skillId: string): Promise<SkillCompletionResult> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.completeSkill(skillTreeId, skillId);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
     }
 }
 

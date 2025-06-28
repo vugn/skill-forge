@@ -23,7 +23,8 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
     login: () => Promise<boolean>;
     logout: () => Promise<void>;
-    updateUser: (updatedData: Partial<UserProfile>) => Promise<void>; // Add this line
+    updateUser: (updatedData: Partial<UserProfile>) => Promise<void>;
+    refreshUserProfile: () => Promise<void>;
 }
 
 export interface IAuthService {
