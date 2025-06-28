@@ -8,6 +8,7 @@ import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
 import Error "mo:base/Error";
+import Debug "mo:base/Debug";
 
 import LLM "mo:llm";
 
@@ -23,28 +24,26 @@ module SkillTree {
         #GenerationFailed : Text;
     };
 
-    // --- LLM Response Structures ---
-    // Types use 'var' to enable direct parsing from JSON.
-    // Fields are optional to handle cases where the LLM might omit them.
+    // --- Simplified LLM Response Structures ---
     public type LLMQuestion = {
-        var text : Text;
-        var options : [Text];
-        var correctOptionIndex : Nat;
-        var explanation : Text;
+        text : Text;
+        options : [Text];
+        correctOptionIndex : Nat;
+        explanation : Text;
     };
 
     public type LLMSkill = {
-        var skillName : Text;
-        var description : Text;
-        var iconName : ?Text;
-        var dependencies : [Text];
-        var questTitle : Text;
-        var questions : [LLMQuestion];
-        var maxPoints : ?Nat;
+        skillName : Text;
+        description : Text;
+        iconName : ?Text;
+        dependencies : [Text];
+        questTitle : Text;
+        questions : [LLMQuestion];
+        maxPoints : ?Nat;
     };
 
     public type LLMResponse = {
-        var learningPath : [LLMSkill];
+        learningPath : [LLMSkill];
     };
 
     // Helper function to create Trie key from Text
@@ -52,62 +51,308 @@ module SkillTree {
         { key = t; hash = Text.hash(t) };
     };
     
-    // --- Simplified JSON Parsing Function ---
-    // For now, we'll create a mock response since proper JSON parsing is complex
-    private func cleanAndParseJson(_rawContent: Text) : Result.Result<LLMResponse, Text> {
-        // Create a mock response structure
-        let mockResponse : LLMResponse = {
-            var learningPath = [
-                {
-                    var skillName = "Introduction to Programming";
-                    var description = "Learn the basics of programming";
-                    var iconName = ?"code";
-                    var dependencies = [];
-                    var questTitle = "Programming Fundamentals Quest";
-                    var questions = [
-                        {
-                            var text = "What is a variable?";
-                            var options = ["A storage location", "A function", "A loop"];
-                            var correctOptionIndex = 0;
-                            var explanation = "A variable is a storage location with an associated name";
-                        }
-                    ];
-                    var maxPoints = ?100;
-                }
-            ];
+    // --- Real JSON Parsing Function ---
+    // --- Real JSON Parsing Function (Manual Parser) ---
+    private func cleanAndParseJson(rawContent: Text) : Result.Result<LLMResponse, Text> {
+        Debug.print("=== PARSING JSON RESPONSE ===");
+        Debug.print("Raw content length: " # Nat.toText(Text.size(rawContent)));
+        Debug.print("Raw content: " # rawContent);
+        
+        // Clean the content by removing any markdown formatting
+        let cleanedContent = cleanMarkdownFormatting(rawContent);
+        Debug.print("Cleaned content: " # cleanedContent);
+        
+        // Parse skills manually from JSON string
+        switch (extractSkillsFromJsonString(cleanedContent)) {
+            case (#ok(skills)) {
+                let response : LLMResponse = { learningPath = skills };
+                Debug.print("✅ Skills parsed successfully: " # Nat.toText(skills.size()) # " skills");
+                #ok(response);
+            };
+            case (#err(error)) {
+                Debug.print("❌ Failed to parse skills: " # error);
+                #err("Failed to parse skills from JSON: " # error);
+            };
         };
-        #ok(mockResponse);
+    };
+
+    // Clean markdown formatting from LLM response
+    private func cleanMarkdownFormatting(text: Text) : Text {
+        var cleaned = text;
+        // Remove ```json and ``` markers
+        cleaned := Text.replace(cleaned, #text("```json"), "");
+        cleaned := Text.replace(cleaned, #text("```"), "");
+        // Remove ** bold formatting
+        cleaned := Text.replace(cleaned, #text("**"), "");
+        // Remove * italic formatting  
+        cleaned := Text.replace(cleaned, #text("*"), "");
+        // Trim whitespace
+        Text.trim(cleaned, #char(' '));
+    };
+
+    // Extract skills from JSON string manually
+    private func extractSkillsFromJsonString(jsonString: Text) : Result.Result<[LLMSkill], Text> {
+        Debug.print("=== EXTRACTING SKILLS FROM JSON STRING ===");
+        
+        // Find learningPath array
+        if (not Text.contains(jsonString, #text("learningPath"))) {
+            return #err("learningPath not found in JSON");
+        };
+        
+        // Simple extraction: split by skill objects
+        let skills = parseSkillObjects(jsonString);
+        
+        if (skills.size() > 0) {
+            Debug.print("✅ Successfully extracted " # Nat.toText(skills.size()) # " skills");
+            #ok(skills);
+        } else {
+            Debug.print("❌ No skills found in JSON");
+            #err("No skills found in JSON");
+        };
+    };
+
+    // Parse skill objects from JSON string
+    private func parseSkillObjects(jsonString: Text) : [LLMSkill] {
+        var skills: [LLMSkill] = [];
+        
+        // Find all skill objects by looking for "skillName" fields
+        let lines = Text.split(jsonString, #char('\n'));
+        var currentSkill: ?{
+            skillName: Text;
+            description: Text;
+            iconName: ?Text;
+            dependencies: [Text];
+            questTitle: Text;
+            questions: [LLMQuestion];
+            maxPoints: ?Nat;
+        } = null;
+        
+        var currentQuestion: ?{
+            text: Text;
+            options: [Text];
+            correctOptionIndex: Nat;
+            explanation: Text;
+        } = null;
+        
+        for (line in lines) {
+            let trimmedLine = Text.trim(line, #char(' '));
+            
+            // Parse skillName
+            if (Text.contains(trimmedLine, #text("skillName")) and Text.contains(trimmedLine, #text(":"))) {
+                // Save previous skill if exists
+                switch (currentSkill) {
+                    case (?skill) {
+                        let skillObj: LLMSkill = {
+                            skillName = skill.skillName;
+                            description = skill.description;
+                            iconName = skill.iconName;
+                            dependencies = skill.dependencies;
+                            questTitle = skill.questTitle;
+                            questions = skill.questions;
+                            maxPoints = skill.maxPoints;
+                        };
+                        skills := Array.append(skills, [skillObj]);
+                    };
+                    case (null) { };
+                };
+                
+                let skillName = extractStringValue(trimmedLine);
+                currentSkill := ?{
+                    skillName = skillName;
+                    description = "Learn " # skillName;
+                    iconName = ?"code";
+                    dependencies = [];
+                    questTitle = skillName # " Quest";
+                    questions = [];
+                    maxPoints = ?100;
+                };
+                Debug.print("Found skill: " # skillName);
+            };
+            
+            // Parse other fields
+            if (Text.contains(trimmedLine, #text("description")) and Text.contains(trimmedLine, #text(":"))) {
+                let description = extractStringValue(trimmedLine);
+                switch (currentSkill) {
+                    case (?skill) {
+                        currentSkill := ?{ skill with description = description };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            if (Text.contains(trimmedLine, #text("iconName")) and Text.contains(trimmedLine, #text(":"))) {
+                let iconName = extractStringValue(trimmedLine);
+                switch (currentSkill) {
+                    case (?skill) {
+                        currentSkill := ?{ skill with iconName = ?iconName };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            if (Text.contains(trimmedLine, #text("questTitle")) and Text.contains(trimmedLine, #text(":"))) {
+                let questTitle = extractStringValue(trimmedLine);
+                switch (currentSkill) {
+                    case (?skill) {
+                        currentSkill := ?{ skill with questTitle = questTitle };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            if (Text.contains(trimmedLine, #text("maxPoints")) and Text.contains(trimmedLine, #text(":"))) {
+                let maxPoints = extractNumberValue(trimmedLine);
+                switch (currentSkill) {
+                    case (?skill) {
+                        currentSkill := ?{ skill with maxPoints = ?maxPoints };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            // Parse question fields
+            if (Text.contains(trimmedLine, #text("text")) and Text.contains(trimmedLine, #text(":")) and not Text.contains(trimmedLine, #text("skillName"))) {
+                let questionText = extractStringValue(trimmedLine);
+                currentQuestion := ?{
+                    text = questionText;
+                    options = [];
+                    correctOptionIndex = 0;
+                    explanation = "";
+                };
+                Debug.print("Found question: " # questionText);
+            };
+            
+            if (Text.contains(trimmedLine, #text("options")) and Text.contains(trimmedLine, #text(":"))) {
+                let options = extractArrayValue(trimmedLine);
+                switch (currentQuestion) {
+                    case (?q) {
+                        currentQuestion := ?{ q with options = options };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            if (Text.contains(trimmedLine, #text("correctOptionIndex")) and Text.contains(trimmedLine, #text(":"))) {
+                let correctIndex = extractNumberValue(trimmedLine);
+                switch (currentQuestion) {
+                    case (?q) {
+                        currentQuestion := ?{ q with correctOptionIndex = correctIndex };
+                    };
+                    case (null) { };
+                };
+            };
+            
+            if (Text.contains(trimmedLine, #text("explanation")) and Text.contains(trimmedLine, #text(":"))) {
+                let explanation = extractStringValue(trimmedLine);
+                switch (currentQuestion) {
+                    case (?q) {
+                        currentQuestion := ?{ q with explanation = explanation };
+                        
+                        // Complete question, add to current skill
+                        let question: LLMQuestion = {
+                            text = q.text;
+                            options = q.options;
+                            correctOptionIndex = q.correctOptionIndex;
+                            explanation = explanation;
+                        };
+                        
+                        switch (currentSkill) {
+                            case (?skill) {
+                                let updatedQuestions = Array.append(skill.questions, [question]);
+                                currentSkill := ?{ skill with questions = updatedQuestions };
+                                Debug.print("Added question to skill");
+                            };
+                            case (null) { };
+                        };
+                        
+                        currentQuestion := null;
+                    };
+                    case (null) { };
+                };
+            };
+        };
+        
+        // Don't forget the last skill
+        switch (currentSkill) {
+            case (?skill) {
+                let skillObj: LLMSkill = {
+                    skillName = skill.skillName;
+                    description = skill.description;
+                    iconName = skill.iconName;
+                    dependencies = skill.dependencies;
+                    questTitle = skill.questTitle;
+                    questions = skill.questions;
+                    maxPoints = skill.maxPoints;
+                };
+                skills := Array.append(skills, [skillObj]);
+            };
+            case (null) { };
+        };
+        
+        skills;
+    };
+
+    // Extract string value from JSON line like "key": "value"
+    private func extractStringValue(line: Text) : Text {
+        if (Text.contains(line, #text(":"))) {
+            let parts = Text.split(line, #char(':'));
+            var result = "";
+            var count = 0;
+            for (part in parts) {
+                if (count > 0) {
+                    if (result == "") {
+                        result := Text.trim(part, #char(' '));
+                    } else {
+                        result := result # ":" # part;
+                    };
+                };
+                count += 1;
+            };
+            // Remove quotes and comma
+            result := Text.replace(result, #text("\""), "");
+            result := Text.replace(result, #text(","), "");
+            Text.trim(result, #char(' '));
+        } else {
+            "";
+        };
+    };
+
+    // Extract number value from JSON line
+    private func extractNumberValue(line: Text) : Nat {
+        let stringValue = extractStringValue(line);
+        switch (Nat.fromText(stringValue)) {
+            case (?num) { num };
+            case (null) { 100 };
+        };
+    };
+
+    // Extract array value from JSON line (simplified)
+    private func extractArrayValue(line: Text) : [Text] {
+        // Look for array pattern [item1, item2, item3]
+        if (Text.contains(line, #text("[")) and Text.contains(line, #text("]"))) {
+            // Simple extraction - split by comma and clean
+            let arrayPart = Text.replace(line, #text("["), "");
+            let cleanArray = Text.replace(arrayPart, #text("]"), "");
+            let items = Text.split(cleanArray, #char(','));
+            
+            var result: [Text] = [];
+            for (item in items) {
+                let cleaned = Text.trim(item, #char(' '));
+                let withoutQuotes = Text.replace(cleaned, #text("\""), "");
+                if (withoutQuotes != "" and not Text.contains(withoutQuotes, #text(":"))) {
+                    result := Array.append(result, [withoutQuotes]);
+                };
+            };
+            result;
+        } else {
+            ["Option A", "Option B", "Option C"];
+        };
     };
 
     // --- Main function to generate skill tree ---
     public func generateSkillTree(request : Types.SkillTreeRequest, userId : Principal) : async Result.Result<Types.SkillTreeGeneration, SkillTreeError> {
-        // --- NEW: Enhanced system prompt with a "Few-Shot" example ---
-        // Providing a perfect example is the best way to get valid JSON from the LLM.
-        let systemPrompt =
-          "You are an expert curriculum designer. Your task is to generate a comprehensive, structured learning path based on a user's request. " #
-          "CRITICAL: You must respond ONLY with a single, valid JSON object. Do not add any explanatory text, comments, or markdown formatting like ```json. " #
-          "Follow the structure of this example perfectly:\n" #
-          "{\n" #
-          "  \"learningPath\": [\n" #
-          "    {\n" #
-          "      \"skillName\": \"Introduction to Web Development\",\n" #
-          "      \"description\": \"Understand the core components of the web: HTML, CSS, and JavaScript.\",\n" #
-          "      \"iconName\": \"code\",\n" #
-          "      \"dependencies\": [],\n" #
-          "      \"questTitle\": \"Build Your First Static Web Page\",\n" #
-          "      \"maxPoints\": 50,\n" #
-          "      \"questions\": [\n" #
-          "        {\n" #
-          "          \"text\": \"What does HTML stand for?\",\n" #
-          "          \"options\": [\"HyperText Markup Language\", \"High-Level Text Machine Language\", \"Hyperlink and Text Markup Language\"],\n" #
-          "          \"correctOptionIndex\": 0,\n" #
-          "          \"explanation\": \"HTML is the standard markup language for creating web pages and web applications.\"\n" #
-          "        }\n" #
-          "      ]\n" #
-          "    }\n" #
-          "  ]\n" #
-          "}\n\n" #
-          "Now, generate a new learning path based on the user's request below, following the same exact JSON format.";
+        // Optimized short prompt to fit 10KiB limit and produce 1000 token response
+        let systemPrompt = "Generate JSON for learning path. Format: {\"learningPath\":[{\"skillName\":\"name\",\"description\":\"desc\",\"iconName\":\"code\",\"dependencies\":[],\"questTitle\":\"title\",\"maxPoints\":100,\"questions\":[{\"text\":\"question?\",\"options\":[\"A\",\"B\",\"C\"],\"correctOptionIndex\":0,\"explanation\":\"why\"}]}]}. Create 3-5 skills, 2-3 questions each. No markdown.";
 
         try {
             let llmResponse = await LLM.chat(#Llama3_1_8B).withMessages([
