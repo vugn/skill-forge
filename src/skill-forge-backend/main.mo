@@ -217,32 +217,56 @@ actor SkillForge {
     public shared (msg) func generateSkillTree(request : Types.SkillTreeRequest) : async Result.Result<Types.SkillTreeGeneration, Text> {
         let userId = msg.caller;
 
-        // Check if user exists
-        switch (Auth.getUserByPrincipal(users, userId)) {
-            case (?_user) {
-                switch (await SkillTree.generateSkillTree(request, userId)) {
-                    case (#ok(generation)) {
-                        // Store the generated skill trees and quests
-                        for (skillTree in generation.skillTrees.vals()) {
-                            skillTrees := Trie.put(skillTrees, textKey(skillTree.id), Text.equal, skillTree).0;
-                        };
-
-                        for (quest in generation.quests.vals()) {
-                            quests := Trie.put(quests, textKey(quest.id), Text.equal, quest).0;
-                        };
-
-                        #ok(generation);
+        // Check if user exists, create if not
+        let user = switch (Auth.getUserByPrincipal(users, userId)) {
+            case (?existingUser) { existingUser };
+            case (null) {
+                // Auto-create user with default data if they don't exist
+                let defaultUserData : Types.UserCreateData = {
+                    username = "user" # Principal.toText(userId);
+                    fullName = null;
+                    profilePicture = null;
+                };
+                
+                switch (Auth.authenticateUser(users, userId, defaultUserData)) {
+                    case (#ok(authResult)) {
+                        users := Trie.put(users, principalKey(userId), Principal.equal, authResult.user).0;
+                        authResult.user;
                     };
                     case (#err(error)) {
                         let errorMessage = switch (error) {
-                            case (#GenerationFailed(message)) { message };
-                            case (_) { "Unknown error occurred" };
+                            case (#UserNotFound) { "User not found" };
+                            case (#InvalidPrincipal) { "Invalid principal" };
+                            case (#UsernameTaken) { "Username taken" };
+                            case (#UsernameInvalid) { "Username invalid" };
+                            case (#UpdateFailed) { "Update failed" };
                         };
-                        #err(errorMessage);
+                        return #err("Failed to create user: " # errorMessage);
                     };
                 };
             };
-            case (null) { #err("User not found") };
+        };
+
+        switch (await SkillTree.generateSkillTree(request, userId)) {
+            case (#ok(generation)) {
+                // Store the generated skill trees and quests
+                for (skillTree in generation.skillTrees.vals()) {
+                    skillTrees := Trie.put(skillTrees, textKey(skillTree.id), Text.equal, skillTree).0;
+                };
+
+                for (quest in generation.quests.vals()) {
+                    quests := Trie.put(quests, textKey(quest.id), Text.equal, quest).0;
+                };
+
+                #ok(generation);
+            };
+            case (#err(error)) {
+                let errorMessage = switch (error) {
+                    case (#GenerationFailed(message)) { message };
+                    case (_) { "Unknown error occurred" };
+                };
+                #err(errorMessage);
+            };
         };
     };
 

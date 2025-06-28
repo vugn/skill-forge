@@ -143,7 +143,9 @@ class AuthService implements IAuthService {
                 console.log('User profile loaded from canister:', profile);
                 return profile;
             } catch (error) {
-                console.log('User not found in canister, trying localStorage:', error);
+                console.log('User not found in canister - this is expected for new users:', error);
+                // This is expected for new users who haven't created a profile yet
+                // Don't treat this as an error, just return null
             }
         }
 

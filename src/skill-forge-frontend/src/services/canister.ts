@@ -230,6 +230,95 @@ export class CanisterService {
         const result = await this.actor.getUserByUsername(username);
         return result.length > 0 ? result[0] : null;
     }
+
+    // Skill Tree Methods
+    async generateSkillTree(request: { prompt: string; category: string[]; difficulty: string[] }): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.generateSkillTree(request);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async getUserSkillTrees(): Promise<any[]> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        return await this.actor.getUserSkillTrees();
+    }
+
+    async getSkillTreeById(skillTreeId: string): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        return await this.actor.getSkillTreeById(skillTreeId);
+    }
+
+    async getQuestById(questId: string): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        return await this.actor.getQuestById(questId);
+    }
+
+    async acceptSkillTree(skillTreeId: string): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.acceptSkillTree(skillTreeId);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async declineSkillTree(skillTreeId: string): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.declineSkillTree(skillTreeId);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async submitQuestAnswers(questId: string, answers: bigint[]): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.submitQuestAnswers(questId, answers);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async getUserSkillProgress(skillTreeId: string): Promise<any> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        return await this.actor.getUserSkillProgress(skillTreeId);
+    }
 }
 
 export const canisterService = new CanisterService();

@@ -7,10 +7,12 @@ import Time "mo:base/Time";
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
+import Float "mo:base/Float";
 import Error "mo:base/Error";
 import Debug "mo:base/Debug";
 
 import LLM "mo:llm";
+import Level "./Level";
 
 module SkillTree {
 
@@ -633,5 +635,285 @@ module SkillTree {
 
     public func createProgressKey(userId : Principal, skillTreeId : Text) : Text {
         Principal.toText(userId) # "#" # skillTreeId;
+    };
+    
+    // --- Quest Completion and Level Integration ---
+    
+    public type QuestCompletionResult = {
+        questCompleted: Bool;
+        skillUnlocked: Bool;
+        newSkillsUnlocked: [Text];
+        expGained: Nat;
+        levelUpResult: Types.LevelUpResult;
+        finalScore: Nat;
+    };
+
+    // Complete a quest and gain XP/levels
+    public func completeQuest(
+        skillTrees: Types.SkillTrees,
+        quests: Types.Quests,
+        userProgress: Types.UserSkillProgress,
+        questId: Text,
+        answers: [Nat],
+        currentUserLevel: Types.LevelInfo
+    ) : Result.Result<QuestCompletionResult, SkillTreeError> {
+        
+        Debug.print("=== COMPLETING QUEST ===");
+        Debug.print("Quest ID: " # questId);
+        Debug.print("User answers: " # debug_show(answers));
+        
+        // Find the quest
+        switch (Trie.find(quests, textKey(questId), Text.equal)) {
+            case (?quest) {
+                Debug.print("Found quest: " # quest.title);
+                
+                // Calculate score
+                let score = calculateQuestScore(quest, answers);
+                let scorePercentage = if (quest.questions.size() > 0) {
+                    (score * 100) / quest.questions.size()
+                } else { 0 };
+                
+                Debug.print("Score: " # Nat.toText(score) # "/" # Nat.toText(quest.questions.size()));
+                Debug.print("Percentage: " # Nat.toText(scorePercentage) # "%");
+                
+                // Check if quest is passed
+                let passingScore = Float.toInt(quest.passingThreshold * 100.0);
+                let questPassed = scorePercentage >= Int.abs(passingScore);
+                
+                Debug.print("Passing threshold: " # Nat.toText(Int.abs(passingScore)) # "%");
+                Debug.print("Quest passed: " # debug_show(questPassed));
+                
+                if (questPassed) {
+                    // Calculate XP gained
+                    let baseExp = quest.points;
+                    let bonusExp = calculateBonusExp(scorePercentage);
+                    let totalExpGained = baseExp + bonusExp;
+                    
+                    Debug.print("Base EXP: " # Nat.toText(baseExp));
+                    Debug.print("Bonus EXP: " # Nat.toText(bonusExp));
+                    Debug.print("Total EXP gained: " # Nat.toText(totalExpGained));
+                    
+                    // Apply level up
+                    let levelUpResult = Level.addExperience(currentUserLevel.totalExp, totalExpGained);
+                    
+                    Debug.print("Previous level: " # Nat.toText(currentUserLevel.level));
+                    Debug.print("New level: " # Nat.toText(levelUpResult.newLevel));
+                    Debug.print("Leveled up: " # debug_show(levelUpResult.leveledUp));
+                    
+                    // Find skill associated with this quest
+                    let skillId = findSkillByQuestId(skillTrees, userProgress.skillTreeId, questId);
+                    
+                    var newSkillsUnlocked: [Text] = [];
+                    var skillUnlocked = false;
+                    
+                    switch (skillId) {
+                        case (?sId) {
+                            Debug.print("Found skill for quest: " # sId);
+                            
+                            // Mark skill as completed and unlock dependent skills
+                            let unlockedSkills = unlockDependentSkills(skillTrees, userProgress.skillTreeId, sId, userProgress.completedSkills);
+                            newSkillsUnlocked := unlockedSkills;
+                            skillUnlocked := unlockedSkills.size() > 0;
+                            
+                            Debug.print("New skills unlocked: " # debug_show(unlockedSkills));
+                        };
+                        case (null) {
+                            Debug.print("No skill found for quest ID: " # questId);
+                        };
+                    };
+                    
+                    let result: QuestCompletionResult = {
+                        questCompleted = true;
+                        skillUnlocked = skillUnlocked;
+                        newSkillsUnlocked = newSkillsUnlocked;
+                        expGained = totalExpGained;
+                        levelUpResult = levelUpResult;
+                        finalScore = scorePercentage;
+                    };
+                    
+                    Debug.print("Quest completion successful!");
+                    #ok(result);
+                } else {
+                    // Quest failed
+                    let levelUpResult = Level.addExperience(currentUserLevel.totalExp, 0);
+                    let result: QuestCompletionResult = {
+                        questCompleted = false;
+                        skillUnlocked = false;
+                        newSkillsUnlocked = [];
+                        expGained = 0;
+                        levelUpResult = levelUpResult;
+                        finalScore = scorePercentage;
+                    };
+                    
+                    Debug.print("Quest failed - score too low");
+                    #ok(result);
+                };
+            };
+            case (null) {
+                Debug.print("Quest not found: " # questId);
+                #err(#QuestNotFound);
+            };
+        };
+    };
+
+    // Calculate quest score based on correct answers
+    private func calculateQuestScore(quest: Types.Quest, answers: [Nat]) : Nat {
+        var correctAnswers = 0;
+        let maxQuestions = Nat.min(quest.questions.size(), answers.size());
+        
+        var i = 0;
+        while (i < maxQuestions) {
+            if (i < quest.questions.size() and i < answers.size()) {
+                let question = quest.questions[i];
+                let userAnswer = answers[i];
+                
+                if (userAnswer == question.correctAnswer) {
+                    correctAnswers += 1;
+                    Debug.print("Question " # Nat.toText(i) # " correct");
+                } else {
+                    Debug.print("Question " # Nat.toText(i) # " incorrect - expected: " # 
+                               Nat.toText(question.correctAnswer) # ", got: " # Nat.toText(userAnswer));
+                };
+            };
+            i += 1;
+        };
+        
+        correctAnswers;
+    };
+
+    // Calculate bonus XP based on performance
+    private func calculateBonusExp(scorePercentage: Nat) : Nat {
+        if (scorePercentage >= 95) {
+            50; // Perfect score bonus
+        } else if (scorePercentage >= 85) {
+            25; // Excellent bonus
+        } else if (scorePercentage >= 75) {
+            10; // Good bonus
+        } else {
+            0; // No bonus
+        };
+    };
+
+    // Find skill ID by quest ID
+    private func findSkillByQuestId(skillTrees: Types.SkillTrees, skillTreeId: Text, questId: Text) : ?Text {
+        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
+            case (?skillTree) {
+                for (skill in skillTree.skills.vals()) {
+                    if (skill.questId == questId) {
+                        return ?skill.id;
+                    };
+                };
+                null;
+            };
+            case (null) { null };
+        };
+    };
+
+    // Unlock skills that depend on completed skill
+    private func unlockDependentSkills(skillTrees: Types.SkillTrees, skillTreeId: Text, completedSkillId: Text, currentCompletedSkills: [Text]) : [Text] {
+        var newUnlockedSkills: [Text] = [];
+        let updatedCompletedSkills = Array.append(currentCompletedSkills, [completedSkillId]);
+        
+        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
+            case (?skillTree) {
+                for (skill in skillTree.skills.vals()) {
+                    // Check if this skill depends on the completed skill
+                    let dependsOnCompletedSkill = Array.find<Text>(skill.dependencies, func(dep) { dep == completedSkillId });
+                    
+                    if (dependsOnCompletedSkill != null and not skill.isCompleted) {
+                        // Check if all dependencies are met
+                        let allDependenciesMet = checkDependencies(skill.dependencies, updatedCompletedSkills);
+                        
+                        if (allDependenciesMet) {
+                            newUnlockedSkills := Array.append(newUnlockedSkills, [skill.id]);
+                            Debug.print("Unlocked skill: " # skill.name);
+                        };
+                    };
+                };
+            };
+            case (null) { };
+        };
+        
+        newUnlockedSkills;
+    };
+
+    // Update user progress after quest completion
+    public func updateUserProgress(
+        userProgress: Types.UserSkillProgress,
+        questId: Text,
+        skillId: Text,
+        score: Nat,
+        expGained: Nat
+    ) : Types.UserSkillProgress {
+        
+        // Add skill to completed skills if not already there
+        let updatedCompletedSkills = if (Array.find<Text>(userProgress.completedSkills, func(s) { s == skillId }) == null) {
+            Array.append(userProgress.completedSkills, [skillId]);
+        } else {
+            userProgress.completedSkills;
+        };
+        
+        // Update quest progress
+        let updatedQuestProgress = updateQuestProgress(userProgress.questProgress, questId, score);
+        
+        // Update total points
+        let updatedTotalPoints = userProgress.totalPoints + expGained;
+        
+        {
+            userId = userProgress.userId;
+            skillTreeId = userProgress.skillTreeId;
+            completedSkills = updatedCompletedSkills;
+            questProgress = updatedQuestProgress;
+            totalPoints = updatedTotalPoints;
+            lastUpdated = Time.now();
+        };
+    };
+
+    // Helper to update quest progress
+    private func updateQuestProgress(questProgress: [(Text, Nat)], questId: Text, score: Nat) : [(Text, Nat)] {
+        var updated = false;
+        var newProgress: [(Text, Nat)] = [];
+        
+        for ((qId, qScore) in questProgress.vals()) {
+            if (qId == questId) {
+                newProgress := Array.append(newProgress, [(questId, score)]);
+                updated := true;
+            } else {
+                newProgress := Array.append(newProgress, [(qId, qScore)]);
+            };
+        };
+        
+        if (not updated) {
+            newProgress := Array.append(newProgress, [(questId, score)]);
+        };
+        
+        newProgress;
+    };
+
+    // Get user level info with current progress
+    public func getUserLevelInfo(userProgress: Types.UserSkillProgress) : Types.LevelInfo {
+        Level.getLevelInfo(userProgress.totalPoints);
+    };
+
+    // Check if user can attempt quest (skill is unlocked)
+    public func canAttemptQuest(skillTrees: Types.SkillTrees, userProgress: Types.UserSkillProgress, questId: Text) : Bool {
+        switch (findSkillByQuestId(skillTrees, userProgress.skillTreeId, questId)) {
+            case (?skillId) {
+                switch (Trie.find(skillTrees, textKey(userProgress.skillTreeId), Text.equal)) {
+                    case (?skillTree) {
+                        // Find the skill
+                        switch (Array.find<Types.SkillNode>(skillTree.skills, func(s) { s.id == skillId })) {
+                            case (?skill) {
+                                // Check if dependencies are met
+                                checkDependencies(skill.dependencies, userProgress.completedSkills);
+                            };
+                            case (null) { false };
+                        };
+                    };
+                    case (null) { false };
+                };
+            };
+            case (null) { false };
+        };
     };
 };
