@@ -1,5 +1,6 @@
 import Types "./Types";
 import Auth "./Auth";
+import Level "./Level";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Trie "mo:base/Trie";
@@ -103,6 +104,60 @@ actor SkillForge {
     // Get total user count
     public query func getUserCount() : async Nat {
         Trie.size(users);
+    };
+
+    // Add experience to user
+    public shared(msg) func addExperience(amount : Nat, _source : Text) : async Result.Result<Types.LevelUpResult, Text> {
+        let userId = msg.caller;
+        
+        switch (Auth.getUserByPrincipal(users, userId)) {
+            case (?user) {
+                let levelUpResult = Level.addExperience(user.totalExperience, amount);
+                
+                // Update user with new experience and level
+                let updatedUser : Types.User = {
+                    id = user.id;
+                    username = user.username;
+                    fullName = user.fullName;
+                    profilePicture = user.profilePicture;
+                    createdAt = user.createdAt;
+                    lastLogin = user.lastLogin;
+                    level = levelUpResult.newLevel;
+                    experience = levelUpResult.newLevelInfo.currentExp;
+                    totalExperience = levelUpResult.newLevelInfo.totalExp;
+                };
+                
+                // Save updated user
+                users := Trie.put(users, principalKey(userId), Principal.equal, updatedUser).0;
+                
+                #ok(levelUpResult);
+            };
+            case (null) { #err("User not found") };
+        };
+    };
+
+    // Get user level info
+    public shared(msg) func getLevelInfo() : async Result.Result<Types.LevelInfo, Text> {
+        let userId = msg.caller;
+        
+        switch (Auth.getUserByPrincipal(users, userId)) {
+            case (?user) {
+                let levelInfo = Level.getLevelInfo(user.totalExperience);
+                #ok(levelInfo);
+            };
+            case (null) { #err("User not found") };
+        };
+    };
+
+    // Add experience for specific activities
+    public shared(_msg) func completeActivity(activityType : Text) : async Result.Result<Types.LevelUpResult, Text> {
+        let expReward = Level.getExpReward(activityType);
+        await addExperience(expReward, activityType);
+    };
+
+    // Get experience required for next level
+    public query func getExpRequiredForLevel(level : Nat) : async Nat {
+        Level.getExpRequiredForLevel(level);
     };
 
     // Health check

@@ -11,6 +11,9 @@ export interface BackendUser {
     profilePicture: string[]; // Optional in Candid is represented as array
     createdAt: bigint;
     lastLogin: bigint;
+    level: bigint;
+    experience: bigint;
+    totalExperience: bigint;
 }
 
 export interface UserCreateData {
@@ -23,6 +26,21 @@ export interface UserUpdateData {
     username?: string[];
     fullName?: string[]; // Optional in Candid is represented as array
     profilePicture?: string[]; // Optional in Candid is represented as array
+    experience?: bigint[];
+}
+
+export interface BackendLevelInfo {
+    level: bigint;
+    currentExp: bigint;
+    expToNextLevel: bigint;
+    totalExp: bigint;
+}
+
+export interface BackendLevelUpResult {
+    newLevel: bigint;
+    expGained: bigint;
+    leveledUp: boolean;
+    newLevelInfo: BackendLevelInfo;
 }
 
 export interface AuthResult {
@@ -39,6 +57,9 @@ export function backendUserToProfile(backendUser: BackendUser): UserProfile {
         profilePicture: (backendUser.profilePicture && backendUser.profilePicture.length > 0) ? backendUser.profilePicture[0] : '',
         createdAt: new Date(Number(backendUser.createdAt) / 1000000), // Convert from nanoseconds
         lastLogin: new Date(Number(backendUser.lastLogin) / 1000000), // Convert from nanoseconds
+        level: Number(backendUser.level),
+        experience: Number(backendUser.experience),
+        totalExperience: Number(backendUser.totalExperience),
     };
 }
 
@@ -148,6 +169,57 @@ export class CanisterService {
         }
 
         return await this.actor.userExists();
+    }
+
+    async addExperience(amount: number, source: string): Promise<BackendLevelUpResult> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.addExperience(BigInt(amount), source);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async getLevelInfo(): Promise<BackendLevelInfo> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.getLevelInfo();
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async completeActivity(activityType: string): Promise<BackendLevelUpResult> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.completeActivity(activityType);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    async getExpRequiredForLevel(level: number): Promise<number> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.getExpRequiredForLevel(BigInt(level));
+        return Number(result);
     }
 
     async getUserByUsername(username: string): Promise<BackendUser | null> {

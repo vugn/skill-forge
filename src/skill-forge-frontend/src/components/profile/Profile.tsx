@@ -261,6 +261,18 @@ const Profile: React.FC = () => {
                                             <span className="text-gray-300">Skills Mastered</span>
                                             <span className="text-gold font-semibold">{learningStats.skillsCompleted}</span>
                                         </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span className="text-gray-300">Current Level</span>
+                                            <span className="text-gold font-semibold">{user?.level || 1}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span className="text-gray-300">Total Experience</span>
+                                            <span className="text-gold font-semibold">{user?.totalExperience || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                                            <span className="text-gray-300">Current Experience</span>
+                                            <span className="text-gold font-semibold">{user?.experience || 0}</span>
+                                        </div>
                                     </div>
                                 </div>
 

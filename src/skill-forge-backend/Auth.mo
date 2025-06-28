@@ -43,6 +43,9 @@ module {
                     profilePicture = existingUser.profilePicture;
                     createdAt = existingUser.createdAt;
                     lastLogin = Time.now();
+                    level = existingUser.level;
+                    experience = existingUser.experience;
+                    totalExperience = existingUser.totalExperience;
                 };
                 
                 #ok({
@@ -59,6 +62,9 @@ module {
                     profilePicture = userData.profilePicture;
                     createdAt = Time.now();
                     lastLogin = Time.now();
+                    level = 1;
+                    experience = 0;
+                    totalExperience = 0;
                 };
 
                 #ok({
@@ -106,6 +112,11 @@ module {
                     case (?newProfilePicture) { ?newProfilePicture };
                 };
 
+                let experience = switch (updateData.experience) {
+                    case (null) { user.experience };
+                    case (?newExp) { newExp };
+                };
+
                 let updatedUser : Types.User = {
                     id = user.id;
                     username = username;
@@ -113,6 +124,9 @@ module {
                     profilePicture = profilePicture;
                     createdAt = user.createdAt;
                     lastLogin = Time.now();
+                    level = user.level;
+                    experience = experience;
+                    totalExperience = user.totalExperience;
                 };
 
                 #ok(updatedUser);

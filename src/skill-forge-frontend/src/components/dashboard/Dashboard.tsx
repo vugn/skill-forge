@@ -21,15 +21,17 @@ const Dashboard: React.FC = () => {
         name: user?.fullName || 'SkillForge User',
         username: user?.username || 'user',
         joinDate: user?.createdAt ? formatJoinDate(user.createdAt) : 'Baru bergabung',
-        level: 12, // TODO: Implement level system di backend
-        currentXP: 2450, // TODO: Implement XP system di backend  
-        nextLevelXP: 3000, // TODO: Implement next level XP di backend
-        totalXP: 15750, // TODO: Implement total XP di backend
+        level: user?.level || 1,
+        currentXP: user?.experience || 0,
+        nextLevelXP: 100, // Default untuk sekarang, bisa dihitung nanti
+        totalXP: user?.totalExperience || 0,
         skillsCompleted: 23, // TODO: Implement skills completion di backend
         avatar: user?.profilePicture || '/api/placeholder/150/150'
     };
 
-    const xpProgress = (userData.currentXP / userData.nextLevelXP) * 100;
+    const xpProgress = userData.nextLevelXP > 0 
+        ? (userData.currentXP / (userData.currentXP + userData.nextLevelXP)) * 100 
+        : 0;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-deep-navy via-dark-blue to-deep-navy">

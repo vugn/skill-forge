@@ -123,6 +123,9 @@ const AccountSetup: React.FC = () => {
         profilePicture: profilePicture || '',
         createdAt: new Date(),
         lastLogin: new Date(),
+        level: 1,
+        experience: 0,
+        totalExperience: 0,
       };
 
       await authService.saveUserProfile(profile);

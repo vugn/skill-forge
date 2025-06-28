@@ -8,6 +8,9 @@ export interface UserProfile {
     profilePicture: string;
     createdAt: Date;
     lastLogin: Date;
+    level: number;
+    experience: number;
+    totalExperience: number;
 }
 
 export interface AuthState {
@@ -36,6 +39,26 @@ export interface IAuthService {
     hasUserProfile(principal: string): Promise<boolean>;
     loadUserProfileFromStorage(principal: string): Promise<UserProfile | null>; // Add this if needed
     saveUserProfileToStorage(principal: string, profile: UserProfile): Promise<void>; // Add this if needed
+}
+
+export interface LevelInfo {
+    level: number;
+    currentExp: number;
+    expToNextLevel: number;
+    totalExp: number;
+}
+
+export interface LevelUpResult {
+    newLevel: number;
+    expGained: number;
+    leveledUp: boolean;
+    newLevelInfo: LevelInfo;
+}
+
+export interface ExperienceGain {
+    amount: number;
+    source: string;
+    timestamp: Date;
 }
 
 export interface NavLink {

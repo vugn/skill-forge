@@ -10,6 +10,9 @@ module {
         profilePicture: ?Text;
         createdAt: Int;
         lastLogin: Int;
+        level: Nat;
+        experience: Nat;
+        totalExperience: Nat;
     };
 
     // User update data type
@@ -17,6 +20,7 @@ module {
         username: ?Text;
         fullName: ?Text;
         profilePicture: ?Text;
+        experience: ?Nat;
     };
 
     // User creation data type
@@ -49,4 +53,26 @@ module {
         #ok: T;
         #err: E;
     };
+
+    // Experience and level types
+    public type ExperienceGain = {
+        amount: Nat;
+        source: Text; // e.g., "skill_completion", "quiz_passed", "daily_login"
+        timestamp: Int;
+    };
+
+    public type LevelInfo = {
+        level: Nat;
+        currentExp: Nat;
+        expToNextLevel: Nat;
+        totalExp: Nat;
+    };
+
+    public type LevelUpResult = {
+        newLevel: Nat;
+        expGained: Nat;
+        leveledUp: Bool;
+        newLevelInfo: LevelInfo;
+    };
+
 }
