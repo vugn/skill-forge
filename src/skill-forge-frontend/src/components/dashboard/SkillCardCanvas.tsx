@@ -50,7 +50,7 @@ interface Connection {
     toId: string;
 }
 
-const SkillTreeCanvas: React.FC = () => {
+const SkillCardCanvas: React.FC = () => {
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const [transform, setTransform] = useState({
@@ -1028,4 +1028,4 @@ const SkillTreeCanvas: React.FC = () => {
     );
 };
 
-export default SkillTreeCanvas;
+export default SkillCardCanvas;

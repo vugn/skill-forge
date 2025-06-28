@@ -7,7 +7,6 @@ export const ROUTES = {
     HOME: '/',
     SETUP: '/setup',
     DASHBOARD: '/dashboard',
-    PROFILE: '/profile',
     SKILLS: '/skills',
     ACHIEVEMENTS: '/achievements',
 } as const;

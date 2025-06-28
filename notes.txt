@@ -1,66 +1,18 @@
-WOI RAN KALO BANGUN N OE TIDUR BACA INI
+WASSUP RANDAA
 
-BUG NYA IALAH KENAPA PRINCIPAL KEY NYA BISA JADI 2 BIJI ANJIR 1 YANG DI GENERATE INTERNET IDENTITY SATU YANG 2vxsx-fae
+Branch let-me-cook2 ini yang final
 
-bugnya dia di bagian INI file AuthContext.tsx bagian loadUserFromBackend disitu di bagian validasinya ya terutama yang hasProfile nah disitu harusnya akun baru ga ada profile tpi disitu hasil validasinya hasProfile:true keload dah data di akun sebelumnya, padahal harusnya false n bikin profile baru, INTINYA PROBLEMNYA DI VALIDASI HASPROFILE
+list changes:
+- Tweak Visual Skill Card 
+- Profile show real stat exp, level and next level
+- Removing Profile Tab
+- Refactoring SkillTree jadi SkillCard (BE FE SEMUA)
 
-Const loadUserFromBackend = async (): Promise<void> => {
-  setCheckingProfile(true);
-  try {
-    console.log('Loading user from backend...');
-    
-    // 🔑 CRITICAL: Gunakan HANYA principal dari Internet Identity
-    const principalFromII = authService.getPrincipalText();
-    if (!principalFromII) {
-      console.error('No principal from Internet Identity');
-      setUser(null);
-      return;
-    }
-    
-    console.log('Using principal from II:', principalFromII);
-    
-    // Check profile status from backend
-    const profileStatus = await authService.getProfileStatus();
-    console.log('Profile status:', profileStatus);
-    
-    if (profileStatus.hasProfile && profileStatus.user) {
-      // ✅ User has profile in backend - SAFE to use
-      const backendUser = profileStatus.user as { id: unknown; username: string; createdAt: unknown };
-      
-      const userProfile: UserProfile = {
-        principal: principalFromII, // ✅ Gunakan principal II
-        fullName: backendUser.username,
-        profilePicture: '', 
-        createdAt: new Date(Number(String(backendUser.createdAt)) / 1000000),
-        lastLogin: new Date()
-      };
-      
-      console.log('Setting user profile from backend:', userProfile);
-      setUser(userProfile);
-      
-      // Save to localStorage dengan key principal II
-      await authService.saveUserProfileToStorage(principalFromII, userProfile);
-      
-    } else {
-      // ❌ TIDAK ADA PROFILE DI BACKEND
-      console.log('No profile in backend for principal:', principalFromII);
-      
-      // 🚨 CRITICAL FIX: JANGAN load localStorage untuk user baru!
-      // User yang tidak ada di backend = user baru yang perlu setup
-      console.log('New user detected - requires profile setup');
-      setUser(null); // Force user to setup profile
-    }
-  } catch (error) {
-    console.error('Failed to load user from backend:', error);
-    
-    // 🚨 CRITICAL: JANGAN fallback ke localStorage pada error
-    // Error bisa berarti network issue, tapi tetap jangan risk load profile orang lain
-    console.log('Backend error - user must login again or setup profile');
-    setUser(null);
-  } finally {
-    setCheckingProfile(false);
-  }
-};
-  /**
+Bug:
+- Complete Quest expnya belum masuk
+- Learning progress card juga belum beres
 
-  
+SARAN: 
+- UNTUK QUEST ITU KALO ISINYA TASK AJA GIMANA? BUKAN QUESTION
+
+IMMA SLEEP BYE

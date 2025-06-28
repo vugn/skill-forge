@@ -512,7 +512,7 @@ const LearningPathDetail: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <Link
-                                to="/profile"
+                                to="/skills"
                                 className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
                             >
                                 <ArrowLeft className="w-5 h-5" />

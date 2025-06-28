@@ -507,11 +507,11 @@ const Dashboard: React.FC = () => {
                 
                 await canisterService.init(identity);
                 
-                // Load skill trees
-                const userTrees = await canisterService.getUserSkillTrees();
+                // Load skill cards
+                const userCards = await canisterService.getUserSkillCards();
                 
-                // Extract all skills from all trees with safe access
-                const allSkills = userTrees?.flatMap(tree => tree?.skills || []) || [];
+                // Extract all skills from all cards with safe access
+                const allSkills = userCards?.flatMap(card => card?.skills || []) || [];
                 setUserSkills(allSkills);
 
                 // Load level info
@@ -687,12 +687,6 @@ const Dashboard: React.FC = () => {
                                     >
                                         <span>Generate My Path</span>
                                         <ChevronRight className="w-5 h-5" />
-                                    </Link>
-                                    <Link
-                                        to="/profile"
-                                        className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 border border-white/20"
-                                    >
-                                        View Profile
                                     </Link>
                                 </div>
                             </div>

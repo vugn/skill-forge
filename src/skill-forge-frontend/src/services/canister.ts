@@ -52,7 +52,7 @@ export interface QuestResult {
 }
 
 export interface SkillCompletionResult {
-    skillTree: any; // Will be replaced with proper SkillTree type
+    skillCard: any; // Will be replaced with proper SkillCard type
     expGained: bigint;
     levelUpResult: BackendLevelUpResult[];
 }
@@ -245,13 +245,13 @@ export class CanisterService {
         return result.length > 0 ? result[0] : null;
     }
 
-    // Skill Tree Methods
-    async generateSkillTree(request: { prompt: string; category: string[]; difficulty: string[] }): Promise<any> {
+    // Skill Card Methods
+    async generateSkillCard(request: { prompt: string; category: string[]; difficulty: string[] }): Promise<any> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        const result = await this.actor.generateSkillTree(request);
+        const result = await this.actor.generateSkillCard(request);
         
         if ('ok' in result) {
             return result.ok;
@@ -260,20 +260,20 @@ export class CanisterService {
         }
     }
 
-    async getUserSkillTrees(): Promise<any[]> {
+    async getUserSkillCards(): Promise<any[]> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        return await this.actor.getUserSkillTrees();
+        return await this.actor.getUserSkillCards();
     }
 
-    async getSkillTreeById(skillTreeId: string): Promise<any> {
+    async getSkillCardById(skillCardId: string): Promise<any> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        return await this.actor.getSkillTreeById(skillTreeId);
+        return await this.actor.getSkillCardById(skillCardId);
     }
 
     async getQuestById(questId: string): Promise<any> {
@@ -284,12 +284,12 @@ export class CanisterService {
         return await this.actor.getQuestById(questId);
     }
 
-    async acceptSkillTree(skillTreeId: string): Promise<any> {
+    async acceptSkillCard(skillCardId: string): Promise<any> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        const result = await this.actor.acceptSkillTree(skillTreeId);
+        const result = await this.actor.acceptSkillCard(skillCardId);
         
         if ('ok' in result) {
             return result.ok;
@@ -298,12 +298,12 @@ export class CanisterService {
         }
     }
 
-    async declineSkillTree(skillTreeId: string): Promise<any> {
+    async declineSkillCard(skillCardId: string): Promise<any> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        const result = await this.actor.declineSkillTree(skillTreeId);
+        const result = await this.actor.declineSkillCard(skillCardId);
         
         if ('ok' in result) {
             return result.ok;
@@ -326,20 +326,20 @@ export class CanisterService {
         }
     }
 
-    async getUserSkillProgress(skillTreeId: string): Promise<any> {
+    async getUserSkillProgress(skillCardId: string): Promise<any> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        return await this.actor.getUserSkillProgress(skillTreeId);
+        return await this.actor.getUserSkillProgress(skillCardId);
     }
 
-    async completeSkill(skillTreeId: string, skillId: string): Promise<SkillCompletionResult> {
+    async completeSkill(skillCardId: string, skillId: string): Promise<SkillCompletionResult> {
         if (!this.actor) {
             throw new Error('Canister service not initialized');
         }
 
-        const result = await this.actor.completeSkill(skillTreeId, skillId);
+        const result = await this.actor.completeSkill(skillCardId, skillId);
         
         if ('ok' in result) {
             return result.ok;

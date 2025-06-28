@@ -5,7 +5,6 @@ import {
     Home,
     LogOut,
     Menu,
-    User,
     X
 } from 'lucide-react';
 import React, { useState } from 'react';
@@ -29,7 +28,6 @@ const DashboardNavbar: React.FC = () => {
 
     const navLinks = [
         { to: '/dashboard', label: 'Dashboard', icon: Home },
-        { to: '/profile', label: 'Profile', icon: User },
         { to: '/skills', label: 'Skills', icon: BookOpen },
     ];
 

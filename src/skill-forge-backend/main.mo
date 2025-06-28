@@ -1,7 +1,7 @@
 import Types "./Types";
 import Auth "./Auth";
 import Level "./Level";
-import SkillTree "./SkillTree";
+import SkillCard "./SkillCard";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Trie "mo:base/Trie";
@@ -14,21 +14,21 @@ actor SkillForge {
     // Stable storage for users
     private stable var usersEntries : [(Principal, Types.User)] = [];
 
-    // Stable storage for skill trees
-    private stable var skillTreesEntries : [(Text, Types.SkillTree)] = [];
+    // Stable storage for skill cards
+    private stable var skillCardsEntries : [(Text, Types.SkillCard)] = [];
     private stable var questsEntries : [(Text, Types.Quest)] = [];
     private stable var userProgressEntries : [(Text, Types.UserSkillProgress)] = [];
 
     // Runtime storage using Trie
     private var users : Types.Users = Trie.empty();
-    private var skillTrees : Types.SkillTrees = Trie.empty();
+    private var skillCards : Types.SkillCards = Trie.empty();
     private var quests : Types.Quests = Trie.empty();
     private var userProgress : Types.UserSkillProgressMap = Trie.empty();
 
     // System functions for upgrade persistence
     system func preupgrade() {
         usersEntries := Trie.toArray<Principal, Types.User, (Principal, Types.User)>(users, func(k : Principal, v : Types.User) : (Principal, Types.User) { (k, v) });
-        skillTreesEntries := Trie.toArray<Text, Types.SkillTree, (Text, Types.SkillTree)>(skillTrees, func(k : Text, v : Types.SkillTree) : (Text, Types.SkillTree) { (k, v) });
+        skillCardsEntries := Trie.toArray<Text, Types.SkillCard, (Text, Types.SkillCard)>(skillCards, func(k : Text, v : Types.SkillCard) : (Text, Types.SkillCard) { (k, v) });
         questsEntries := Trie.toArray<Text, Types.Quest, (Text, Types.Quest)>(quests, func(k : Text, v : Types.Quest) : (Text, Types.Quest) { (k, v) });
         userProgressEntries := Trie.toArray<Text, Types.UserSkillProgress, (Text, Types.UserSkillProgress)>(userProgress, func(k : Text, v : Types.UserSkillProgress) : (Text, Types.UserSkillProgress) { (k, v) });
     };
@@ -37,8 +37,8 @@ actor SkillForge {
         for ((principal, user) in usersEntries.vals()) {
             users := Trie.put(users, principalKey(principal), Principal.equal, user).0;
         };
-        for ((key, skillTree) in skillTreesEntries.vals()) {
-            skillTrees := Trie.put(skillTrees, textKey(key), Text.equal, skillTree).0;
+        for ((key, skillCard) in skillCardsEntries.vals()) {
+            skillCards := Trie.put(skillCards, textKey(key), Text.equal, skillCard).0;
         };
         for ((key, quest) in questsEntries.vals()) {
             quests := Trie.put(quests, textKey(key), Text.equal, quest).0;
@@ -47,7 +47,7 @@ actor SkillForge {
             userProgress := Trie.put(userProgress, textKey(key), Text.equal, progress).0;
         };
         usersEntries := [];
-        skillTreesEntries := [];
+        skillCardsEntries := [];
         questsEntries := [];
         userProgressEntries := [];
     };
@@ -202,19 +202,19 @@ actor SkillForge {
         true;
     };
 
-    // ===== SKILL TREE SYSTEM =====
+    // ===== SKILL CARD SYSTEM =====
 
-    // Commented out test functions since they don't exist in SkillTree module
+    // Commented out test functions since they don't exist in SkillCard module
     // public func testingLLM(prompt : Text) : async Result.Result<Text, Text> {
-    //     await SkillTree.testingLLM(prompt);
+    //     await SkillCard.testingLLM(prompt);
     // };
 
-    // public func testingSkillTreeLLM( prompt : Text) : async Result.Result<Text, Text> {
-    //     await SkillTree.testingSkillTreeLLM(prompt);
+    // public func testingSkillCardLLM( prompt : Text) : async Result.Result<Text, Text> {
+    //     await SkillCard.testingSkillCardLLM(prompt);
     // };
 
-    // Generate skill tree based on user input
-    public shared (msg) func generateSkillTree(request : Types.SkillTreeRequest) : async Result.Result<Types.SkillTreeGeneration, Text> {
+    // Generate skill card based on user input
+    public shared (msg) func generateSkillCard(request : Types.SkillCardRequest) : async Result.Result<Types.SkillCardGeneration, Text> {
         let userId = msg.caller;
 
         // Check if user exists, create if not
@@ -247,11 +247,11 @@ actor SkillForge {
             };
         };
 
-        switch (await SkillTree.generateSkillTree(request, userId)) {
+        switch (await SkillCard.generateSkillCard(request, userId)) {
             case (#ok(generation)) {
-                // Store the generated skill trees and quests
-                for (skillTree in generation.skillTrees.vals()) {
-                    skillTrees := Trie.put(skillTrees, textKey(skillTree.id), Text.equal, skillTree).0;
+                // Store the generated skill cards and quests
+                for (skillCard in generation.skillCards.vals()) {
+                    skillCards := Trie.put(skillCards, textKey(skillCard.id), Text.equal, skillCard).0;
                 };
 
                 for (quest in generation.quests.vals()) {
@@ -270,20 +270,20 @@ actor SkillForge {
         };
     };
 
-    // Accept a skill tree
-    public shared (msg) func acceptSkillTree(skillTreeId : Text) : async Result.Result<Types.SkillTree, Text> {
+    // Accept a skill card
+    public shared (msg) func acceptSkillCard(skillCardId : Text) : async Result.Result<Types.SkillCard, Text> {
         let userId = msg.caller;
 
-        switch (SkillTree.acceptSkillTree(skillTrees, skillTreeId, userId)) {
-            case (#ok(acceptedTree)) {
-                // Update skill tree in storage
-                skillTrees := Trie.put(skillTrees, textKey(skillTreeId), Text.equal, acceptedTree).0;
+        switch (SkillCard.acceptSkillCard(skillCards, skillCardId, userId)) {
+            case (#ok(acceptedCard)) {
+                // Update skill card in storage
+                skillCards := Trie.put(skillCards, textKey(skillCardId), Text.equal, acceptedCard).0;
 
                 // Create initial user progress
-                let progressKey = SkillTree.createProgressKey(userId, skillTreeId);
+                let progressKey = SkillCard.createProgressKey(userId, skillCardId);
                 let initialProgress : Types.UserSkillProgress = {
                     userId = userId;
-                    skillTreeId = skillTreeId;
+                    skillCardId = skillCardId;
                     completedSkills = [];
                     questProgress = [];
                     totalPoints = 0;
@@ -292,16 +292,16 @@ actor SkillForge {
 
                 userProgress := Trie.put(userProgress, textKey(progressKey), Text.equal, initialProgress).0;
 
-                #ok(acceptedTree);
+                #ok(acceptedCard);
             };
             case (#err(error)) {
                 let errorMessage = switch (error) {
-                    case (#SkillTreeNotFound) { "Skill tree not found" };
+                    case (#SkillCardNotFound) { "Skill card not found" };
                     case (#UserNotAuthorized) {
-                        "Not authorized to access this skill tree";
+                        "Not authorized to access this skill card";
                     };
-                    case (#SkillTreeAlreadyAccepted) {
-                        "Skill tree already accepted";
+                    case (#SkillCardAlreadyAccepted) {
+                        "Skill card already accepted";
                     };
                     case (_) { "Unknown error occurred" };
                 };
@@ -310,21 +310,21 @@ actor SkillForge {
         };
     };
 
-    // Decline a skill tree
-    public shared (msg) func declineSkillTree(skillTreeId : Text) : async Result.Result<Bool, Text> {
+    // Decline a skill card
+    public shared (msg) func declineSkillCard(skillCardId : Text) : async Result.Result<Bool, Text> {
         let userId = msg.caller;
 
-        switch (SkillTree.declineSkillTree(skillTrees, skillTreeId, userId)) {
-            case (#ok(declinedTree)) {
-                // Update skill tree in storage
-                skillTrees := Trie.put(skillTrees, textKey(skillTreeId), Text.equal, declinedTree).0;
+        switch (SkillCard.declineSkillCard(skillCards, skillCardId, userId)) {
+            case (#ok(declinedCard)) {
+                // Update skill card in storage
+                skillCards := Trie.put(skillCards, textKey(skillCardId), Text.equal, declinedCard).0;
                 #ok(true);
             };
             case (#err(error)) {
                 let errorMessage = switch (error) {
-                    case (#SkillTreeNotFound) { "Skill tree not found" };
+                    case (#SkillCardNotFound) { "Skill card not found" };
                     case (#UserNotAuthorized) {
-                        "Not authorized to access this skill tree";
+                        "Not authorized to access this skill card";
                     };
                     case (_) { "Unknown error occurred" };
                 };
@@ -333,15 +333,15 @@ actor SkillForge {
         };
     };
 
-    // Get user's skill trees
-    public shared (msg) func getUserSkillTrees() : async [Types.SkillTree] {
+    // Get user's skill cards
+    public shared (msg) func getUserSkillCards() : async [Types.SkillCard] {
         let userId = msg.caller;
-        SkillTree.getUserSkillTrees(skillTrees, userId);
+        SkillCard.getUserSkillCards(skillCards, userId);
     };
 
-    // Get skill tree by ID
-    public query func getSkillTreeById(skillTreeId : Text) : async ?Types.SkillTree {
-        SkillTree.getSkillTreeById(skillTrees, skillTreeId);
+    // Get skill card by ID
+    public query func getSkillCardById(skillCardId : Text) : async ?Types.SkillCard {
+        SkillCard.getSkillCardById(skillCards, skillCardId);
     };
 
     // Get quest by ID
@@ -349,34 +349,34 @@ actor SkillForge {
         Trie.find(quests, textKey(questId), Text.equal);
     };
 
-    // Get user progress for a skill tree
-    public shared (msg) func getUserSkillProgress(skillTreeId : Text) : async ?Types.UserSkillProgress {
+    // Get user progress for a skill card
+    public shared (msg) func getUserSkillProgress(skillCardId : Text) : async ?Types.UserSkillProgress {
         let userId = msg.caller;
-        let progressKey = SkillTree.createProgressKey(userId, skillTreeId);
+        let progressKey = SkillCard.createProgressKey(userId, skillCardId);
         Trie.find(userProgress, textKey(progressKey), Text.equal);
     };
 
     // Complete a skill and unlock dependencies
-    public shared (msg) func completeSkill(skillTreeId : Text, skillId : Text) : async Result.Result<{ skillTree : Types.SkillTree; expGained : Nat; levelUpResult : [Types.LevelUpResult] }, Text> {
+    public shared (msg) func completeSkill(skillCardId : Text, skillId : Text) : async Result.Result<{ skillCard : Types.SkillCard; expGained : Nat; levelUpResult : [Types.LevelUpResult] }, Text> {
         let userId = msg.caller;
-        let progressKey = SkillTree.createProgressKey(userId, skillTreeId);
+        let progressKey = SkillCard.createProgressKey(userId, skillCardId);
 
-        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
-            case (?skillTree) {
-                if (skillTree.userId != userId or skillTree.status != #accepted) {
-                    return #err("Not authorized or skill tree not accepted");
+        switch (Trie.find(skillCards, textKey(skillCardId), Text.equal)) {
+            case (?skillCard) {
+                if (skillCard.userId != userId or skillCard.status != #accepted) {
+                    return #err("Not authorized or skill card not accepted");
                 };
 
                 let currentProgress = Trie.find(userProgress, textKey(progressKey), Text.equal);
 
-                switch (SkillTree.unlockSkill(skillTree, skillId, currentProgress)) {
-                    case (#ok(updatedTree)) {
-                        // Update skill tree
-                        skillTrees := Trie.put(skillTrees, textKey(skillTreeId), Text.equal, updatedTree).0;
+                switch (SkillCard.unlockSkill(skillCard, skillId, currentProgress)) {
+                    case (#ok(updatedCard)) {
+                        // Update skill card
+                        skillCards := Trie.put(skillCards, textKey(skillCardId), Text.equal, updatedCard).0;
 
                         // Find the completed skill to get its points
                         var skillPoints : Nat = 50; // Default points
-                        for (skill in updatedTree.skills.vals()) {
+                        for (skill in updatedCard.skills.vals()) {
                             if (skill.id == skillId) {
                                 skillPoints := skill.maxPoints;
                             };
@@ -395,7 +395,7 @@ actor SkillForge {
                             case (null) {
                                 {
                                     userId = userId;
-                                    skillTreeId = skillTreeId;
+                                    skillCardId = skillCardId;
                                     completedSkills = [skillId];
                                     questProgress = [];
                                     totalPoints = skillPoints;
@@ -420,7 +420,7 @@ actor SkillForge {
                         };
 
                         #ok({
-                            skillTree = updatedTree;
+                            skillCard = updatedCard;
                             expGained = expGained;
                             levelUpResult = levelUpResult;
                         });
@@ -430,8 +430,8 @@ actor SkillForge {
                             case (#SkillNotUnlocked) {
                                 "Skill dependencies not met";
                             };
-                            case (#SkillTreeNotFound) {
-                                "Skill not found in tree";
+                            case (#SkillCardNotFound) {
+                                "Skill not found in card";
                             };
                             case (_) { "Unknown error occurred" };
                         };
@@ -439,7 +439,7 @@ actor SkillForge {
                     };
                 };
             };
-            case (null) { #err("Skill tree not found") };
+            case (null) { #err("Skill card not found") };
         };
     };
 
@@ -502,9 +502,9 @@ actor SkillForge {
         Trie.toArray<Text, Types.Quest, Types.Quest>(quests, func(k : Text, v : Types.Quest) : Types.Quest { v });
     };
 
-    // Get all skill trees (for testing)
-    public query func getAllSkillTrees() : async [Types.SkillTree] {
-        Trie.toArray<Text, Types.SkillTree, Types.SkillTree>(skillTrees, func(k : Text, v : Types.SkillTree) : Types.SkillTree { v });
+    // Get all skill cards (for testing)
+    public query func getAllSkillCards() : async [Types.SkillCard] {
+        Trie.toArray<Text, Types.SkillCard, Types.SkillCard>(skillCards, func(k : Text, v : Types.SkillCard) : Types.SkillCard { v });
     };
 
 };

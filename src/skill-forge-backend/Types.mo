@@ -112,13 +112,13 @@ module {
         currentPoints: Nat;
     };
 
-    public type SkillTreeStatus = {
+    public type SkillCardStatus = {
         #preview;
         #accepted;
         #declined;
     };
 
-    public type SkillTree = {
+    public type SkillCard = {
         id: Text;
         title: Text;
         description: Text;
@@ -126,17 +126,17 @@ module {
         skills: [SkillNode];
         completedPoints: Nat;
         totalPoints: Nat;
-        status: SkillTreeStatus;
+        status: SkillCardStatus;
         createdAt: Int;
         userId: Principal;
     };
 
-    public type SkillTreeGeneration = {
-        skillTrees: [SkillTree];
+    public type SkillCardGeneration = {
+        skillCards: [SkillCard];
         quests: [Quest];
     };
 
-    public type SkillTreeRequest = {
+    public type SkillCardRequest = {
         prompt: Text;
         category: ?Text;
         difficulty: ?Text;
@@ -144,7 +144,7 @@ module {
 
     public type UserSkillProgress = {
         userId: Principal;
-        skillTreeId: Text;
+        skillCardId: Text;
         completedSkills: [Text];
         questProgress: [(Text, Nat)]; // (questId, score)
         totalPoints: Nat;
@@ -152,8 +152,8 @@ module {
     };
 
     // Storage types
-    public type SkillTrees = Trie.Trie<Text, SkillTree>;
-    public type UserSkillProgressMap = Trie.Trie<Text, UserSkillProgress>; // key: userId#skillTreeId
+    public type SkillCards = Trie.Trie<Text, SkillCard>;
+    public type UserSkillProgressMap = Trie.Trie<Text, UserSkillProgress>; // key: userId#skillCardId
     public type Quests = Trie.Trie<Text, Quest>;
 
 }

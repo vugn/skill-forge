@@ -14,13 +14,13 @@ import Debug "mo:base/Debug";
 import LLM "mo:llm";
 import Level "./Level";
 
-module SkillTree {
+module SkillCard {
 
-    public type SkillTreeError = {
-        #SkillTreeNotFound;
-        #InvalidSkillTree;
+    public type SkillCardError = {
+        #SkillCardNotFound;
+        #InvalidSkillCard;
         #UserNotAuthorized;
-        #SkillTreeAlreadyAccepted;
+        #SkillCardAlreadyAccepted;
         #SkillNotUnlocked;
         #QuestNotFound;
         #GenerationFailed : Text;
@@ -352,7 +352,7 @@ module SkillTree {
     };
 
     // --- Main function to generate skill tree ---
-    public func generateSkillTree(request : Types.SkillTreeRequest, userId : Principal) : async Result.Result<Types.SkillTreeGeneration, SkillTreeError> {
+    public func generateSkillCard(request : Types.SkillCardRequest, userId : Principal) : async Result.Result<Types.SkillCardGeneration, SkillCardError> {
         // Optimized short prompt to fit 10KiB limit and produce 1000 token response
         let systemPrompt = "Generate JSON for learning path. Format: {\"learningPath\":[{\"skillName\":\"name\",\"description\":\"desc\",\"iconName\":\"code\",\"dependencies\":[],\"questTitle\":\"title\",\"maxPoints\":100,\"questions\":[{\"text\":\"question?\",\"options\":[\"A\",\"B\",\"C\"],\"correctOptionIndex\":0,\"explanation\":\"why\"}]}]}. Create 3-5 skills, 2-3 questions each. No markdown.";
 
@@ -369,7 +369,7 @@ module SkillTree {
                     // Use the new robust parser
                     switch(cleanAndParseJson(content)) {
                         case (#ok(llmResponse)) {
-                            let generation = jsonToSkillTreeGeneration(llmResponse, request, userId);
+                            let generation = jsonToSkillCardGeneration(llmResponse, request, userId);
                             #ok(generation);
                         };
                         case (#err(parseError)) {
@@ -387,9 +387,9 @@ module SkillTree {
     };
     
     // --- Helper function to transform the valid LLMResponse into application types ---
-    private func jsonToSkillTreeGeneration(response : LLMResponse, request : Types.SkillTreeRequest, userId : Principal) : Types.SkillTreeGeneration {
+    private func jsonToSkillCardGeneration(response : LLMResponse, request : Types.SkillCardRequest, userId : Principal) : Types.SkillCardGeneration {
         let currentTime = Time.now();
-        let skillTreeId = "tree_" # Int.toText(currentTime);
+        let skillCardId = "card_" # Int.toText(currentTime);
 
         var skillsBuffer = Array.init<Types.SkillNode>(response.learningPath.size(), {
             id = "";
@@ -499,8 +499,8 @@ module SkillTree {
         let quests = Array.subArray(Array.freeze(questsBuffer), 0, questIndex);
         let totalPoints = Array.foldLeft<Types.SkillNode, Nat>(skills, 0, func(acc, skill) { acc + skill.maxPoints });
 
-        let skillTree : Types.SkillTree = {
-            id = skillTreeId;
+        let skillCard : Types.SkillCard = {
+            id = skillCardId;
             title = request.prompt # " Learning Path";
             description = "A comprehensive skill tree to master " # request.prompt;
             category = switch (request.category) {
@@ -515,7 +515,7 @@ module SkillTree {
             userId = userId;
         };
 
-        { skillTrees = [skillTree]; quests = quests };
+        { skillCards = [skillCard]; quests = quests };
     };
 
     private func getDefaultIcon(skillName : Text) : Text {
@@ -549,12 +549,12 @@ module SkillTree {
             },
         );
     };
-    public func unlockSkill(skillTree : Types.SkillTree, skillId : Text, userProgress : ?Types.UserSkillProgress) : Result.Result<Types.SkillTree, SkillTreeError> {
-        let skillIndex = Array.indexOf<Types.SkillNode>({ id = skillId; name = ""; description = ""; iconName = ""; gridPosition = { x = 0; y = 0 }; dependencies = []; questId = ""; isUnlocked = false; isCompleted = false; maxPoints = 0; currentPoints = 0 }, skillTree.skills, func(a, b) { a.id == b.id });
+    public func unlockSkill(skillCard : Types.SkillCard, skillId : Text, userProgress : ?Types.UserSkillProgress) : Result.Result<Types.SkillCard, SkillCardError> {
+        let skillIndex = Array.indexOf<Types.SkillNode>({ id = skillId; name = ""; description = ""; iconName = ""; gridPosition = { x = 0; y = 0 }; dependencies = []; questId = ""; isUnlocked = false; isCompleted = false; maxPoints = 0; currentPoints = 0 }, skillCard.skills, func(a, b) { a.id == b.id });
 
         switch (skillIndex) {
             case (?index) {
-                let skill = skillTree.skills[index];
+                let skill = skillCard.skills[index];
 
                 // Check if dependencies are met
                 let completedSkills = switch (userProgress) {
@@ -567,74 +567,74 @@ module SkillTree {
                 if (dependenciesMet) {
                     let updatedSkill = { skill with isUnlocked = true };
                     let updatedSkills = Array.tabulate<Types.SkillNode>(
-                        skillTree.skills.size(),
+                        skillCard.skills.size(),
                         func(i) {
                             if (i == index) { updatedSkill } else {
-                                skillTree.skills[i];
+                                skillCard.skills[i];
                             };
                         },
                     );
 
-                    let updatedTree = { skillTree with skills = updatedSkills };
-                    #ok(updatedTree);
+                    let updatedCard = { skillCard with skills = updatedSkills };
+                    #ok(updatedCard);
                 } else {
                     #err(#SkillNotUnlocked);
                 };
             };
-            case (null) { #err(#SkillTreeNotFound) };
+            case (null) { #err(#SkillCardNotFound) };
         };
     };
 
     // Rest of the functions remain the same but with updated signatures...
-    public func acceptSkillTree(skillTrees : Types.SkillTrees, skillTreeId : Text, userId : Principal) : Result.Result<Types.SkillTree, SkillTreeError> {
-        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
-            case (?skillTree) {
-                if (skillTree.userId != userId) {
+    public func acceptSkillCard(skillCards : Types.SkillCards, skillCardId : Text, userId : Principal) : Result.Result<Types.SkillCard, SkillCardError> {
+        switch (Trie.find(skillCards, textKey(skillCardId), Text.equal)) {
+            case (?skillCard) {
+                if (skillCard.userId != userId) {
                     return #err(#UserNotAuthorized);
                 };
 
-                if (skillTree.status != #preview) {
-                    return #err(#SkillTreeAlreadyAccepted);
+                if (skillCard.status != #preview) {
+                    return #err(#SkillCardAlreadyAccepted);
                 };
 
-                let acceptedTree : Types.SkillTree = {
-                    skillTree with status = #accepted;
+                let acceptedCard : Types.SkillCard = {
+                    skillCard with status = #accepted;
                 };
 
-                #ok(acceptedTree);
+                #ok(acceptedCard);
             };
-            case (null) { #err(#SkillTreeNotFound) };
+            case (null) { #err(#SkillCardNotFound) };
         };
     };
 
-    public func declineSkillTree(skillTrees : Types.SkillTrees, skillTreeId : Text, userId : Principal) : Result.Result<Types.SkillTree, SkillTreeError> {
-        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
-            case (?skillTree) {
-                if (skillTree.userId != userId) {
+    public func declineSkillCard(skillCards : Types.SkillCards, skillCardId : Text, userId : Principal) : Result.Result<Types.SkillCard, SkillCardError> {
+        switch (Trie.find(skillCards, textKey(skillCardId), Text.equal)) {
+            case (?skillCard) {
+                if (skillCard.userId != userId) {
                     return #err(#UserNotAuthorized);
                 };
 
-                let declinedTree : Types.SkillTree = {
-                    skillTree with status = #declined;
+                let declinedCard : Types.SkillCard = {
+                    skillCard with status = #declined;
                 };
 
-                #ok(declinedTree);
+                #ok(declinedCard);
             };
-            case (null) { #err(#SkillTreeNotFound) };
+            case (null) { #err(#SkillCardNotFound) };
         };
     };
 
-    public func getUserSkillTrees(skillTrees : Types.SkillTrees, userId : Principal) : [Types.SkillTree] {
-        let userTrees = Trie.toArray<Text, Types.SkillTree, Types.SkillTree>(skillTrees, func(k : Text, v : Types.SkillTree) : Types.SkillTree { v });
-        Array.filter<Types.SkillTree>(userTrees, func(tree) { tree.userId == userId });
+    public func getUserSkillCards(skillCards : Types.SkillCards, userId : Principal) : [Types.SkillCard] {
+        let userCards = Trie.toArray<Text, Types.SkillCard, Types.SkillCard>(skillCards, func(k : Text, v : Types.SkillCard) : Types.SkillCard { v });
+        Array.filter<Types.SkillCard>(userCards, func(card) { card.userId == userId });
     };
 
-    public func getSkillTreeById(skillTrees : Types.SkillTrees, skillTreeId : Text) : ?Types.SkillTree {
-        Trie.find(skillTrees, textKey(skillTreeId), Text.equal);
+    public func getSkillCardById(skillCards : Types.SkillCards, skillCardId : Text) : ?Types.SkillCard {
+        Trie.find(skillCards, textKey(skillCardId), Text.equal);
     };
 
-    public func createProgressKey(userId : Principal, skillTreeId : Text) : Text {
-        Principal.toText(userId) # "#" # skillTreeId;
+    public func createProgressKey(userId : Principal, skillCardId : Text) : Text {
+        Principal.toText(userId) # "#" # skillCardId;
     };
     
     // --- Quest Completion and Level Integration ---
@@ -650,13 +650,13 @@ module SkillTree {
 
     // Complete a quest and gain XP/levels
     public func completeQuest(
-        skillTrees: Types.SkillTrees,
+        skillCards: Types.SkillCards,
         quests: Types.Quests,
         userProgress: Types.UserSkillProgress,
         questId: Text,
         answers: [Nat],
         currentUserLevel: Types.LevelInfo
-    ) : Result.Result<QuestCompletionResult, SkillTreeError> {
+    ) : Result.Result<QuestCompletionResult, SkillCardError> {
         
         Debug.print("=== COMPLETING QUEST ===");
         Debug.print("Quest ID: " # questId);
@@ -701,7 +701,7 @@ module SkillTree {
                     Debug.print("Leveled up: " # debug_show(levelUpResult.leveledUp));
                     
                     // Find skill associated with this quest
-                    let skillId = findSkillByQuestId(skillTrees, userProgress.skillTreeId, questId);
+                    let skillId = findSkillByQuestId(skillCards, userProgress.skillCardId, questId);
                     
                     var newSkillsUnlocked: [Text] = [];
                     var skillUnlocked = false;
@@ -711,7 +711,7 @@ module SkillTree {
                             Debug.print("Found skill for quest: " # sId);
                             
                             // Mark skill as completed and unlock dependent skills
-                            let unlockedSkills = unlockDependentSkills(skillTrees, userProgress.skillTreeId, sId, userProgress.completedSkills);
+                            let unlockedSkills = unlockDependentSkills(skillCards, userProgress.skillCardId, sId, userProgress.completedSkills);
                             newSkillsUnlocked := unlockedSkills;
                             skillUnlocked := unlockedSkills.size() > 0;
                             
@@ -795,10 +795,10 @@ module SkillTree {
     };
 
     // Find skill ID by quest ID
-    private func findSkillByQuestId(skillTrees: Types.SkillTrees, skillTreeId: Text, questId: Text) : ?Text {
-        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
-            case (?skillTree) {
-                for (skill in skillTree.skills.vals()) {
+    private func findSkillByQuestId(skillCards: Types.SkillCards, skillCardId: Text, questId: Text) : ?Text {
+        switch (Trie.find(skillCards, textKey(skillCardId), Text.equal)) {
+            case (?skillCard) {
+                for (skill in skillCard.skills.vals()) {
                     if (skill.questId == questId) {
                         return ?skill.id;
                     };
@@ -810,13 +810,13 @@ module SkillTree {
     };
 
     // Unlock skills that depend on completed skill
-    private func unlockDependentSkills(skillTrees: Types.SkillTrees, skillTreeId: Text, completedSkillId: Text, currentCompletedSkills: [Text]) : [Text] {
+    private func unlockDependentSkills(skillCards: Types.SkillCards, skillCardId: Text, completedSkillId: Text, currentCompletedSkills: [Text]) : [Text] {
         var newUnlockedSkills: [Text] = [];
         let updatedCompletedSkills = Array.append(currentCompletedSkills, [completedSkillId]);
         
-        switch (Trie.find(skillTrees, textKey(skillTreeId), Text.equal)) {
-            case (?skillTree) {
-                for (skill in skillTree.skills.vals()) {
+        switch (Trie.find(skillCards, textKey(skillCardId), Text.equal)) {
+            case (?skillCard) {
+                for (skill in skillCard.skills.vals()) {
                     // Check if this skill depends on the completed skill
                     let dependsOnCompletedSkill = Array.find<Text>(skill.dependencies, func(dep) { dep == completedSkillId });
                     
@@ -861,7 +861,7 @@ module SkillTree {
         
         {
             userId = userProgress.userId;
-            skillTreeId = userProgress.skillTreeId;
+            skillCardId = userProgress.skillCardId;
             completedSkills = updatedCompletedSkills;
             questProgress = updatedQuestProgress;
             totalPoints = updatedTotalPoints;
@@ -896,13 +896,13 @@ module SkillTree {
     };
 
     // Check if user can attempt quest (skill is unlocked)
-    public func canAttemptQuest(skillTrees: Types.SkillTrees, userProgress: Types.UserSkillProgress, questId: Text) : Bool {
-        switch (findSkillByQuestId(skillTrees, userProgress.skillTreeId, questId)) {
+    public func canAttemptQuest(skillCards: Types.SkillCards, userProgress: Types.UserSkillProgress, questId: Text) : Bool {
+        switch (findSkillByQuestId(skillCards, userProgress.skillCardId, questId)) {
             case (?skillId) {
-                switch (Trie.find(skillTrees, textKey(userProgress.skillTreeId), Text.equal)) {
-                    case (?skillTree) {
+                switch (Trie.find(skillCards, textKey(userProgress.skillCardId), Text.equal)) {
+                    case (?skillCard) {
                         // Find the skill
-                        switch (Array.find<Types.SkillNode>(skillTree.skills, func(s) { s.id == skillId })) {
+                        switch (Array.find<Types.SkillNode>(skillCard.skills, func(s) { s.id == skillId })) {
                             case (?skill) {
                                 // Check if dependencies are met
                                 checkDependencies(skill.dependencies, userProgress.completedSkills);

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import React from 'react';
-import AISkillTreeGenerator from '../ai/AISkillTreeGenerator';
+import AISkillCardGenerator from '../ai/AISkillCardGenerator';
 import DashboardNavbar from '../dashboard/DashboardNavbar';
 
 const Skills: React.FC = () => {
@@ -23,7 +23,7 @@ const Skills: React.FC = () => {
                         </p>
                     </motion.div>
 
-                    <AISkillTreeGenerator />
+                    <AISkillCardGenerator />
                 </div>
             </div>
         </div>

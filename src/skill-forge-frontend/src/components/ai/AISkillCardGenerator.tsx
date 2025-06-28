@@ -143,7 +143,7 @@ interface BackendSkillNode {
     currentPoints: bigint;
 }
 
-interface BackendSkillTree {
+interface BackendSkillCard {
     id: string;
     title: string;
     description: string;
@@ -188,7 +188,7 @@ interface SkillNode {
     currentPoints: number;
 }
 
-interface SkillTree {
+interface SkillCard {
     id: string;
     title: string;
     description: string;
@@ -199,8 +199,8 @@ interface SkillTree {
     status: 'preview' | 'accepted' | 'declined';
 }
 
-interface SkillTreeCanvasProps {
-    tree: SkillTree;
+interface SkillCardCanvasProps {
+    tree: SkillCard;
     onSkillClick: (skill: SkillNode) => void;
     isDraggable?: boolean;
     isPreview?: boolean;
@@ -262,16 +262,16 @@ const convertBackendSkillNode = (backendSkill: BackendSkillNode): SkillNode => (
     currentPoints: Number(backendSkill.currentPoints),
 });
 
-const convertBackendSkillTree = (backendTree: BackendSkillTree): SkillTree => ({
-    id: backendTree.id,
-    title: backendTree.title,
-    description: backendTree.description,
-    category: backendTree.category,
-    skills: backendTree.skills.map(convertBackendSkillNode),
-    completedPoints: Number(backendTree.completedPoints),
-    totalPoints: Number(backendTree.totalPoints),
-    status: 'preview' in backendTree.status ? 'preview' :
-            'accepted' in backendTree.status ? 'accepted' : 'declined',
+const convertBackendSkillCard = (backendCard: BackendSkillCard): SkillCard => ({
+    id: backendCard.id,
+    title: backendCard.title,
+    description: backendCard.description,
+    category: backendCard.category,
+    skills: backendCard.skills.map(convertBackendSkillNode),
+    completedPoints: Number(backendCard.completedPoints),
+    totalPoints: Number(backendCard.totalPoints),
+    status: 'preview' in backendCard.status ? 'preview' :
+            'accepted' in backendCard.status ? 'accepted' : 'declined',
 });
 
 // Dynamic icon selection based on skill type
@@ -616,7 +616,7 @@ const SkillCard: React.FC<{
 };
 
 // --- SKILL TREE GRID ---
-const SkillTreeGrid: React.FC<SkillTreeCanvasProps> = ({
+const SkillCardGrid: React.FC<SkillCardCanvasProps> = ({
     tree,
     onSkillClick,
     isPreview = false
@@ -747,12 +747,12 @@ const SkillTreeGrid: React.FC<SkillTreeCanvasProps> = ({
 };
 
 // --- MAIN COMPONENT ---
-const AISkillTreeGenerator: React.FC = () => {
+const AISkillCardGenerator: React.FC = () => {
     const { isAuthenticated, loading, refreshUserProfile } = useAuth();
     const [input, setInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedTrees, setGeneratedTrees] = useState<SkillTree[]>([]);
-    const [previewTree, setPreviewTree] = useState<SkillTree | null>(null);
+    const [generatedCards, setGeneratedCards] = useState<SkillCard[]>([]);
+    const [previewCard, setPreviewCard] = useState<SkillCard | null>(null);
     const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -765,9 +765,9 @@ const AISkillTreeGenerator: React.FC = () => {
     const [showResult, setShowResult] = useState(false);
 
     // Mobile support
-    const loadUserSkillTrees = useCallback(async () => {
+    const loadUserSkillCards = useCallback(async () => {
         if (!isAuthenticated) {
-            console.log('User not authenticated, skipping skill tree load');
+            console.log('User not authenticated, skipping skill card load');
             return;
         }
 
@@ -775,11 +775,11 @@ const AISkillTreeGenerator: React.FC = () => {
             // Initialize canister service with the current identity
             const identity = authService.getIdentity();
             await canisterService.init(identity);
-            const userTrees = await canisterService.getUserSkillTrees();
-            const convertedTrees = userTrees.map(convertBackendSkillTree);
-            setGeneratedTrees(convertedTrees);
+            const userCards = await canisterService.getUserSkillCards();
+            const convertedCards = userCards.map(convertBackendSkillCard);
+            setGeneratedCards(convertedCards);
         } catch (error) {
-            console.error('Failed to load skill trees:', error);
+            console.error('Failed to load skill cards:', error);
             // Don't show error for "User not found" - this is expected for new users
             const errorMessage = error instanceof Error ? error.message : String(error);
             if (!errorMessage.includes('User not found')) {
@@ -791,9 +791,9 @@ const AISkillTreeGenerator: React.FC = () => {
     // Load user's existing skill trees on component mount
     useEffect(() => {
         if (isAuthenticated && !loading) {
-            loadUserSkillTrees();
+            loadUserSkillCards();
         }
-    }, [isAuthenticated, loading, loadUserSkillTrees]);
+    }, [isAuthenticated, loading, loadUserSkillCards]);
 
     const handleGenerate = useCallback(async () => {
         if (!input.trim()) return;
@@ -819,20 +819,20 @@ const AISkillTreeGenerator: React.FC = () => {
                 difficulty: [], // Optional, let LLM decide
             };
 
-            console.log('Generating skill tree for authenticated user');
-            const generation = await canisterService.generateSkillTree(request);
+            console.log('Generating skill card for authenticated user');
+            const generation = await canisterService.generateSkillCard(request);
             
             // Convert backend data to frontend format
-            const convertedTrees = generation.skillTrees.map(convertBackendSkillTree);
+            const convertedCards = generation.skillCards.map(convertBackendSkillCard);
             const convertedQuests = generation.quests.map(convertBackendQuest);
             
-            // Update state with new trees and quests
-            setGeneratedTrees(prev => [...convertedTrees, ...prev]);
+            // Update state with new cards and quests
+            setGeneratedCards(prev => [...convertedCards, ...prev]);
             setAvailableQuests(prev => [...convertedQuests, ...prev]);
             setInput('');
         } catch (error) {
             console.error('Generation failed:', error);
-            setError(error instanceof Error ? error.message : 'Failed to generate skill tree. Please try again.');
+            setError(error instanceof Error ? error.message : 'Failed to generate skill card. Please try again.');
         } finally {
             setIsGenerating(false);
         }
@@ -910,16 +910,16 @@ const AISkillTreeGenerator: React.FC = () => {
                         try {
                             // Find which skill tree this quest belongs to
                             // For now, we'll need to find the skill tree that contains this quest
-                            const currentTrees = generatedTrees.filter(tree => 
+                            const currentTrees = generatedCards.filter(tree => 
                                 tree.skills.some(skill => skill.questId === activeQuest.id)
                             );
                             
                             if (currentTrees.length > 0) {
-                                const skillTree = currentTrees[0];
-                                const skill = skillTree.skills.find(s => s.questId === activeQuest.id);
+                                const skillCard = currentTrees[0];
+                                const skill = skillCard.skills.find(s => s.questId === activeQuest.id);
                                 
                                 if (skill) {
-                                    const skillResult = await canisterService.completeSkill(skillTree.id, skill.id);
+                                    const skillResult = await canisterService.completeSkill(skillCard.id, skill.id);
                                     
                                     if (skillResult.expGained > 0) {
                                         questResult.expGained = BigInt(Number(questResult.expGained) + Number(skillResult.expGained));
@@ -941,7 +941,7 @@ const AISkillTreeGenerator: React.FC = () => {
                         }
                         
                         // Update skill trees with completed skill
-                        await loadUserSkillTrees();
+                        await loadUserSkillCards();
                         
                         // Refresh user profile to update XP/Level in UI
                         try {
@@ -976,34 +976,34 @@ const AISkillTreeGenerator: React.FC = () => {
                 setActiveQuest(null);
             }
         }, 2000);
-    }, [selectedAnswer, activeQuest, questAnswers, currentQuestionIndex, loadUserSkillTrees, generatedTrees, refreshUserProfile]);
+    }, [selectedAnswer, activeQuest, questAnswers, currentQuestionIndex, loadUserSkillCards, generatedCards, refreshUserProfile]);
 
-    const handleAcceptTree = useCallback(async (tree: SkillTree) => {
+    const handleAcceptCard = useCallback(async (card: SkillCard) => {
         try {
             const identity = authService.getIdentity();
             await canisterService.init(identity);
 
-            const acceptedTree = await canisterService.acceptSkillTree(tree.id);
-            const convertedTree = convertBackendSkillTree(acceptedTree);
-            setGeneratedTrees(prev => prev.map(t => t.id === tree.id ? convertedTree : t));
-            setPreviewTree(null);
+            const acceptedCard = await canisterService.acceptSkillCard(card.id);
+            const convertedCard = convertBackendSkillCard(acceptedCard);
+            setGeneratedCards(prev => prev.map(c => c.id === card.id ? convertedCard : c));
+            setPreviewCard(null);
         } catch (error) {
-            console.error('Failed to accept skill tree:', error);
-            setError('Failed to accept skill tree. Please try again.');
+            console.error('Failed to accept skill card:', error);
+            setError('Failed to accept skill card. Please try again.');
         }
     }, []);
 
-    const handleDeclineTree = useCallback(async (tree: SkillTree) => {
+    const handleDeclineCard = useCallback(async (card: SkillCard) => {
         try {
             const identity = authService.getIdentity();
             await canisterService.init(identity);
 
-            await canisterService.declineSkillTree(tree.id);
-            setGeneratedTrees(prev => prev.filter(t => t.id !== tree.id));
-            setPreviewTree(null);
+            await canisterService.declineSkillCard(card.id);
+            setGeneratedCards(prev => prev.filter(c => c.id !== card.id));
+            setPreviewCard(null);
         } catch (error) {
-            console.error('Failed to decline skill tree:', error);
-            setError('Failed to decline skill tree. Please try again.');
+            console.error('Failed to decline skill card:', error);
+            setError('Failed to decline skill card. Please try again.');
         }
     }, []);
 
@@ -1080,7 +1080,7 @@ const AISkillTreeGenerator: React.FC = () => {
 
                 {/* Generated Trees */}
                 <AnimatePresence>
-                    {generatedTrees.map((tree, index) => (
+                    {generatedCards.map((tree, index) => (
                         <motion.div
                             key={tree.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -1107,21 +1107,21 @@ const AISkillTreeGenerator: React.FC = () => {
                                 {tree.status === 'preview' && (
                                     <div className="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto">
                                         <button
-                                            onClick={() => setPreviewTree(tree)}
+                                            onClick={() => setPreviewCard(tree)}
                                             className="px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors text-sm"
                                         >
                                             <Eye className="w-4 h-4" />
                                             <span>Preview</span>
                                         </button>
                                         <button
-                                            onClick={() => handleAcceptTree(tree)}
+                                            onClick={() => handleAcceptCard(tree)}
                                             className="px-3 md:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors text-sm"
                                         >
                                             <Check className="w-4 h-4" />
                                             <span>Accept</span>
                                         </button>
                                         <button
-                                            onClick={() => handleDeclineTree(tree)}
+                                            onClick={() => handleDeclineCard(tree)}
                                             className="px-3 md:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-colors text-sm"
                                         >
                                             <X className="w-4 h-4" />
@@ -1152,7 +1152,7 @@ const AISkillTreeGenerator: React.FC = () => {
                             </div>
 
                             {/* Skill Tree Grid */}
-                            <SkillTreeGrid
+                            <SkillCardGrid
                                 tree={tree}
                                 onSkillClick={handleSkillClick}
                                 isPreview={false}
@@ -1164,13 +1164,13 @@ const AISkillTreeGenerator: React.FC = () => {
                 {/* Modals */}
                 <AnimatePresence>
                     {/* Preview Modal */}
-                    {previewTree && (
+                    {previewCard && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                            onClick={() => setPreviewTree(null)}
+                            onClick={() => setPreviewCard(null)}
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
@@ -1180,9 +1180,9 @@ const AISkillTreeGenerator: React.FC = () => {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-2xl font-bold text-white">Preview: {previewTree.title}</h3>
+                                    <h3 className="text-2xl font-bold text-white">Preview: {previewCard.title}</h3>
                                     <button
-                                        onClick={() => setPreviewTree(null)}
+                                        onClick={() => setPreviewCard(null)}
                                         className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
                                     >
                                         <X className="w-6 h-6 text-slate-400" />
@@ -1190,8 +1190,8 @@ const AISkillTreeGenerator: React.FC = () => {
                                 </div>
 
                                 <div className="mb-8">
-                                    <SkillTreeGrid
-                                        tree={previewTree}
+                                    <SkillCardGrid
+                                        tree={previewCard}
                                         onSkillClick={() => { }}
                                         isPreview={true}
                                     />
@@ -1199,13 +1199,13 @@ const AISkillTreeGenerator: React.FC = () => {
 
                                 <div className="flex justify-end space-x-4">
                                     <button
-                                        onClick={() => setPreviewTree(null)}
+                                        onClick={() => setPreviewCard(null)}
                                         className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
                                     >
                                         Close
                                     </button>
                                     <button
-                                        onClick={() => handleAcceptTree(previewTree)}
+                                        onClick={() => handleAcceptCard(previewCard)}
                                         className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                                     >
                                         Accept & Start Learning
@@ -1369,4 +1369,4 @@ const AISkillTreeGenerator: React.FC = () => {
     );
 };
 
-export default AISkillTreeGenerator;
+export default AISkillCardGenerator;
