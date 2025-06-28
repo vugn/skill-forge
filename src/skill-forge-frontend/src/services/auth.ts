@@ -5,6 +5,12 @@ import { Principal } from '@dfinity/principal';
 import { IDENTITY_PROVIDERS, STORAGE_KEYS } from '../constants';
 import { IAuthService, UserProfile } from '../types';
 import { getStorageKey, retryAsync, safeJSONParse } from '../utils';
+import { 
+    canisterService, 
+    backendUserToProfile, 
+    profileToCreateData, 
+    profileToUpdateData 
+} from './canister';
 
 /**
  * AuthService class implementing IAuthService interface
@@ -24,6 +30,8 @@ class AuthService implements IAuthService {
 
             if (await this.authClient.isAuthenticated()) {
                 this.identity = this.authClient.getIdentity();
+                // Initialize canister service with the authenticated identity
+                await canisterService.init(this.identity);
             }
         } catch (error) {
             console.error('Failed to initialize auth client:', error);
@@ -42,8 +50,10 @@ class AuthService implements IAuthService {
         return new Promise((resolve) => {
             this.authClient!.login({
                 identityProvider: this.getIdentityProvider(),
-                onSuccess: () => {
+                onSuccess: async () => {
                     this.identity = this.authClient!.getIdentity();
+                    // Initialize canister service with the authenticated identity
+                    await canisterService.init(this.identity);
                     resolve(true);
                 },
                 onError: (error) => {
@@ -108,17 +118,63 @@ class AuthService implements IAuthService {
     }
 
     /**
-     * Get user profile from memory cache
+     * Get user profile from memory cache or canister
      */
     async getUserProfile(principal: string): Promise<UserProfile | null> {
-        return this.userProfiles.get(principal) || null;
+        // First check memory cache
+        const cached = this.userProfiles.get(principal);
+        if (cached) {
+            return cached;
+        }
+
+        // Then check localStorage
+        const stored = await this.loadUserProfileFromStorage(principal);
+        if (stored) {
+            return stored;
+        }
+
+        // Finally, try to get from canister if authenticated
+        if (this.isAuthenticated()) {
+            try {
+                const backendUser = await canisterService.getCurrentUser();
+                const profile = backendUserToProfile(backendUser);
+                this.userProfiles.set(principal, profile);
+                return profile;
+            } catch (error) {
+                console.log('User not found in canister:', error);
+                return null;
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Save user profile to storage and cache
+     * Save user profile to storage, cache and canister
      */
     async saveUserProfile(profile: UserProfile): Promise<void> {
         try {
+            // Extract username from fullName (first word) for canister compatibility
+            const username = profile.fullName.split(' ')[0].toLowerCase() || 'user';
+            
+            // Save to canister
+            if (this.isAuthenticated()) {
+                const createData = profileToCreateData({
+                    ...profile,
+                    username
+                });
+                
+                const authResult = await canisterService.authenticateUser(createData);
+                const updatedProfile = backendUserToProfile(authResult.user);
+                
+                // Update local cache and storage with canister data
+                this.userProfiles.set(profile.principal, updatedProfile);
+                const storageKey = getStorageKey(STORAGE_KEYS.USER_PROFILE_PREFIX, profile.principal);
+                localStorage.setItem(storageKey, JSON.stringify(updatedProfile));
+                return;
+            }
+
+            // Fallback to local storage only
             this.userProfiles.set(profile.principal, profile);
             const storageKey = getStorageKey(STORAGE_KEYS.USER_PROFILE_PREFIX, profile.principal);
             localStorage.setItem(storageKey, JSON.stringify(profile));
@@ -156,14 +212,47 @@ class AuthService implements IAuthService {
      * Check if user has a profile
      */
     async hasUserProfile(principal: string): Promise<boolean> {
+        // Check memory cache first
         const profile = await this.getUserProfile(principal);
+        if (profile) return true;
 
-        if (!profile) {
-            const stored = await this.loadUserProfileFromStorage(principal);
-            return stored !== null;
+        // Check if user exists in canister
+        if (this.isAuthenticated()) {
+            try {
+                const exists = await canisterService.userExists();
+                return exists;
+            } catch (error) {
+                console.log('Error checking user existence:', error);
+            }
         }
 
-        return true;
+        // Fallback to local storage check
+        const stored = await this.loadUserProfileFromStorage(principal);
+        return stored !== null;
+    }
+
+    /**
+     * Update user profile in canister and local storage
+     */
+    async updateUserProfile(principal: string, updates: Partial<UserProfile>): Promise<void> {
+        try {
+            if (!this.isAuthenticated()) {
+                throw new Error('User not authenticated');
+            }
+
+            // Update in canister
+            const updateData = profileToUpdateData(updates);
+            const updatedBackendUser = await canisterService.updateUserProfile(updateData);
+            const updatedProfile = backendUserToProfile(updatedBackendUser);
+
+            // Update local cache and storage
+            this.userProfiles.set(principal, updatedProfile);
+            const storageKey = getStorageKey(STORAGE_KEYS.USER_PROFILE_PREFIX, principal);
+            localStorage.setItem(storageKey, JSON.stringify(updatedProfile));
+        } catch (error) {
+            console.error('Failed to update user profile:', error);
+            throw error;
+        }
     }
 
     /**

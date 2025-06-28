@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Brain, Code2, Link, Play, Rocket, Sparkles, Star, Target, Trophy, Zap } from 'lucide-react';
 import React from 'react';
 import ICPLogo from '../../public/icp-logo.svg';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks';
 
 
 const Hero: React.FC = () => {

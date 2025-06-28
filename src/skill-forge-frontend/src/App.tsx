@@ -5,7 +5,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import Profile from './components/profile/Profile';
 import LearningPathDetail from './components/skills/LearningPathDetail';
 import Skills from './components/skills/Skills';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts';
 
 function App() {
   return (

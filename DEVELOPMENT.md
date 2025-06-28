@@ -26,6 +26,39 @@ dfx start --clean
 npm run dev
 ```
 
+### Authentication Flow Testing
+
+The authentication system follows this flow:
+
+1. **User clicks "Get Started"** on the landing page
+2. **Internet Identity Authentication** opens in a new window
+3. **Profile Check**: After authentication, system checks:
+   - If user exists in canister → Load existing profile → Go to Dashboard
+   - If new user → Go to Profile Setup page
+4. **Profile Setup** (new users only):
+   - Upload profile picture (optional)
+   - Enter full name (required, min 2 characters)
+   - Username is auto-generated from the first word of full name
+   - Data is saved to ICP canister using Trie storage
+5. **Dashboard Access** with authenticated state
+
+### Backend Architecture
+
+The authentication system uses:
+
+- **Trie-based storage** for efficient user data management
+- **Internet Identity integration** for secure authentication
+- **Persistent storage** with preupgrade/postupgrade hooks
+- **Type-safe Motoko** backend with proper error handling
+
+### Testing Authentication Locally
+
+1. Start the local replica: `dfx start --clean`
+2. Deploy canisters: `npm run deploy`
+3. Open frontend: `http://localhost:3000`
+4. Click "Get Started" to test the full flow
+5. Use Internet Identity in development mode (creates local identity)
+
 ### Making Changes
 
 #### Frontend Changes

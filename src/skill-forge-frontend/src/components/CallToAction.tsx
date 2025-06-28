@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Hammer, Play, Sparkles } from 'lucide-react';
 import React from 'react';
 import ICPLogo from '../../public/icp-logo.svg';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks';
 
 
 const CallToAction: React.FC = () => {

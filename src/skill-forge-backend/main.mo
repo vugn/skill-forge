@@ -1,92 +1,112 @@
-import AuthService "./services/AuthService";
-import AuthState "./storage/AuthState";
-import AuthTypes "./types/Auth";
-import ChatbotService "./services/ChatbotService";
-import ChatbotState "./storage/ChatbotState";
-import ChatbotTypes "./types/Chatbot";
+import Types "./Types";
+import Auth "./Auth";
+import Principal "mo:base/Principal";
+import Result "mo:base/Result";
+import Trie "mo:base/Trie";
 
 actor SkillForge {
-  private stable var authState = AuthState.initAuthState();
- private stable var chatbotState = ChatbotState.initChatbotState();
-
-  // ===== INTERNET IDENTITY AUTH =====
-  public shared(msg) func loginWithII(): async AuthTypes.AuthResult<AuthTypes.User> {
-    // msg.caller sudah authenticated via Internet Identity
-    let caller = msg.caller;
+    // Stable storage for users
+    private stable var usersEntries : [(Principal, Types.User)] = [];
     
-    // Check if user already exists
-    switch (AuthService.getCurrentUser(authState, caller)) {
-      case (?user) { 
-        // User exists, update session
-        let _ = AuthService.createSession(authState, caller); // FIX: assign to wildcard
-        #ok(user) 
-      };
-      case null {
-        // New user, create profile
-        #err("Please complete your profile first.")
-      };
+    // Runtime storage using Trie
+    private var users : Types.Users = Trie.empty();
+
+    // System functions for upgrade persistence
+    system func preupgrade() {
+        usersEntries := Trie.toArray<Principal, Types.User, (Principal, Types.User)>(users, func(k: Principal, v: Types.User): (Principal, Types.User) { (k, v) });
     };
-  };
 
-  public shared(msg) func completeProfile(username: Text, email: Text): async AuthTypes.AuthResult<AuthTypes.User> {
-    // Create user profile after II authentication
-    AuthService.createUserFromII(authState, msg.caller, username, email)
-  };
-
-  // ===== TRADITIONAL AUTH =====
-  public shared(msg) func register(username: Text, email: Text, password: Text): async AuthTypes.AuthResult<AuthTypes.User> {
-    let request: AuthTypes.RegisterRequest = {
-      username = username;
-      email = email;
-      password = password;
+    system func postupgrade() {
+        for ((principal, user) in usersEntries.vals()) {
+            users := Trie.put(users, principalKey(principal), Principal.equal, user).0;
+        };
+        usersEntries := [];
     };
-    AuthService.register(authState, msg.caller, request)
-  };
 
-  public shared(_msg) func login(email: Text, password: Text): async AuthTypes.AuthResult<AuthTypes.User> {
-    let request: AuthTypes.LoginRequest = {
-      email = email;
-      password = password;
+    // Helper function to get principal key for Trie operations
+    private func principalKey(p: Principal) : Trie.Key<Principal> {
+        { key = p; hash = Principal.hash(p) }
     };
-    AuthService.login(authState, request)
-  };
 
-  // ===== COMMON AUTH =====
-  public shared(msg) func logout(): async Bool {
-    AuthService.logout(authState, msg.caller)
-  };
-
-  public shared(msg) func getCurrentUser(): async ?AuthTypes.User {
-    AuthService.getCurrentUser(authState, msg.caller)
-  };
-
-  // ===== USER SETTINGS =====
-  public query(msg) func getSettings(): async ?AuthTypes.Settings {
-    AuthService.getSettings(authState, msg.caller)
-  };
-
-  public shared(msg) func updateSettings(newSettings: AuthTypes.Settings): async Bool {
-    AuthService.updateSettings(authState, msg.caller, newSettings)
-  };
-
- // ===== AI CHATBOT FUNCTIONS =====
-  public shared(msg) func startConversation(): async ChatbotTypes.ChatResult<ChatbotTypes.ChatResponse> {
-    await ChatbotService.startConversation(chatbotState, authState, msg.caller)
-  };
-
-  public shared(msg) func sendMessage(conversationId: ?Text, message: Text): async ChatbotTypes.ChatResult<ChatbotTypes.ChatResponse> {
-    let request: ChatbotTypes.ChatRequest = {
-      conversationId = conversationId;
-      message = message;
+    // Authenticate user with Internet Identity
+    public shared(msg) func authenticateUser(userData : Types.UserCreateData) : async Result.Result<Types.AuthResult, Text> {
+        let userId = msg.caller;
+        
+        switch (Auth.authenticateUser(users, userId, userData)) {
+            case (#ok(authResult)) {
+                // Update users storage
+                users := Trie.put(users, principalKey(userId), Principal.equal, authResult.user).0;
+                #ok(authResult);
+            };
+            case (#err(error)) {
+                let errorMessage = switch (error) {
+                    case (#InvalidPrincipal) { "Invalid principal" };
+                    case (#UsernameTaken) { "Username is already taken" };
+                    case (#UsernameInvalid) { "Username must be at least 3 characters long" };
+                    case (#UserNotFound) { "User not found" };
+                    case (#UpdateFailed) { "Failed to update user" };
+                };
+                #err(errorMessage);
+            };
+        };
     };
-    await ChatbotService.sendMessage(chatbotState, authState, msg.caller, request)
-  };
 
-  public shared(msg) func generateAnalysis(conversationId: Text): async ChatbotTypes.ChatResult<ChatbotTypes.CareerAnalysis> {
-    await ChatbotService.generateAnalysis(chatbotState, authState, msg.caller, conversationId)
-  };
+    // Get current user profile
+    public shared(msg) func getCurrentUser() : async Result.Result<Types.User, Text> {
+        let userId = msg.caller;
+        
+        switch (Auth.getUserByPrincipal(users, userId)) {
+            case (?user) { #ok(user) };
+            case (null) { #err("User not found") };
+        };
+    };
 
-  public query(msg) func getConversation(conversationId: Text): async ?ChatbotTypes.Conversation {
-    ChatbotService.getConversation(chatbotState, authState, msg.caller, conversationId)
-  };
+    // Update user profile
+    public shared(msg) func updateUserProfile(updateData : Types.UserUpdateData) : async Result.Result<Types.User, Text> {
+        let userId = msg.caller;
+        
+        switch (Auth.updateUserProfile(users, userId, updateData)) {
+            case (#ok(updatedUser)) {
+                // Update users storage
+                users := Trie.put(users, principalKey(userId), Principal.equal, updatedUser).0;
+                #ok(updatedUser);
+            };
+            case (#err(error)) {
+                let errorMessage = switch (error) {
+                    case (#InvalidPrincipal) { "Invalid principal" };
+                    case (#UsernameTaken) { "Username is already taken" };
+                    case (#UsernameInvalid) { "Username must be at least 3 characters long" };
+                    case (#UserNotFound) { "User not found" };
+                    case (#UpdateFailed) { "Failed to update user" };
+                };
+                #err(errorMessage);
+            };
+        };
+    };
+
+    // Get user by username (public query)
+    public query func getUserByUsername(username : Text) : async ?Types.User {
+        Auth.getUserByUsername(users, username);
+    };
+
+    // Check if user exists
+    public shared(msg) func userExists() : async Bool {
+        let userId = msg.caller;
+        Auth.userExists(users, userId);
+    };
+
+    // Get all users (for admin purposes, you might want to restrict this)
+    public query func getAllUsers() : async [Types.User] {
+        Trie.toArray<Principal, Types.User, Types.User>(users, func(k: Principal, v: Types.User): Types.User { v });
+    };
+
+    // Get total user count
+    public query func getUserCount() : async Nat {
+        Trie.size(users);
+    };
+
+    // Health check
+    public query func healthCheck() : async Bool {
+        true;
+    };
 }

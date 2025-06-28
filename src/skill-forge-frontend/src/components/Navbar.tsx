@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Link as SmoothLink } from 'react-scroll';
 
 import ICPLogo from '../../public/icp-logo.svg';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks';
 import { useActiveSection, useScrollPosition } from '../hooks';
 import { NavLink } from '../types';
 import { Button } from './ui';

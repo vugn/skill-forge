@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks';
 import { authService } from '../services/auth';
 import CallToAction from './CallToAction';
 import FAQ from './FAQ';
