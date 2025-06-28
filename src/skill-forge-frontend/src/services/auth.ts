@@ -118,34 +118,43 @@ class AuthService implements IAuthService {
     }
 
     /**
-     * Get user profile from memory cache or canister
+     * Get user profile from canister first, then fallback to cache/storage
      */
     async getUserProfile(principal: string): Promise<UserProfile | null> {
         // First check memory cache
         const cached = this.userProfiles.get(principal);
         if (cached) {
+            console.log('Using cached profile for:', principal);
             return cached;
         }
 
-        // Then check localStorage
-        const stored = await this.loadUserProfileFromStorage(principal);
-        if (stored) {
-            return stored;
-        }
-
-        // Finally, try to get from canister if authenticated
+        // Try to get from canister first if authenticated
         if (this.isAuthenticated()) {
             try {
+                console.log('Fetching user from canister for principal:', principal);
                 const backendUser = await canisterService.getCurrentUser();
                 const profile = backendUserToProfile(backendUser);
+                
+                // Save to cache and localStorage for future use
                 this.userProfiles.set(principal, profile);
+                const storageKey = getStorageKey(STORAGE_KEYS.USER_PROFILE_PREFIX, principal);
+                localStorage.setItem(storageKey, JSON.stringify(profile));
+                
+                console.log('User profile loaded from canister:', profile);
                 return profile;
             } catch (error) {
-                console.log('User not found in canister:', error);
-                return null;
+                console.log('User not found in canister, trying localStorage:', error);
             }
         }
 
+        // Fallback to localStorage
+        const stored = await this.loadUserProfileFromStorage(principal);
+        if (stored) {
+            console.log('Using stored profile for:', principal);
+            return stored;
+        }
+
+        console.log('No user profile found for principal:', principal);
         return null;
     }
 
@@ -209,26 +218,12 @@ class AuthService implements IAuthService {
     }
 
     /**
-     * Check if user has a profile
+     * Check if user has a profile - check backend first
      */
     async hasUserProfile(principal: string): Promise<boolean> {
-        // Check memory cache first
+        // Use getUserProfile which already checks backend first
         const profile = await this.getUserProfile(principal);
-        if (profile) return true;
-
-        // Check if user exists in canister
-        if (this.isAuthenticated()) {
-            try {
-                const exists = await canisterService.userExists();
-                return exists;
-            } catch (error) {
-                console.log('Error checking user existence:', error);
-            }
-        }
-
-        // Fallback to local storage check
-        const stored = await this.loadUserProfileFromStorage(principal);
-        return stored !== null;
+        return profile !== null;
     }
 
     /**

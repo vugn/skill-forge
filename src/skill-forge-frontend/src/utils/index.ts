@@ -64,6 +64,33 @@ export const formatRelativeTime = (date: Date): string => {
 };
 
 /**
+ * Generate username from full name
+ */
+export const generateUsername = (fullName: string): string => {
+    if (!fullName || fullName.trim().length === 0) {
+        return 'user';
+    }
+
+    // Ambil kata pertama dan convert ke lowercase
+    const firstName = fullName.trim().split(' ')[0].toLowerCase();
+
+    // Hapus karakter non-alphanumeric dan ganti dengan underscore
+    const cleanUsername = firstName.replace(/[^a-z0-9]/g, '_');
+
+    return cleanUsername || 'user';
+};
+
+/**
+ * Format tanggal join user
+ */
+export const formatJoinDate = (date: Date): string => {
+    return new Intl.DateTimeFormat('id-ID', {
+        year: 'numeric',
+        month: 'long',
+    }).format(date);
+};
+
+/**
  * Storage utility functions
  */
 
@@ -96,7 +123,7 @@ export const chunk = <T>(array: T[], size: number): T[][] => {
  */
 
 export const delay = (ms: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 export const retryAsync = async <T>(

@@ -2,26 +2,31 @@ import { motion } from 'framer-motion';
 import {
     ChevronRight,
     Crown,
-    Trophy
+    Trophy,
+    User,
+    Calendar
 } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks';
+import { formatJoinDate } from '../../utils';
 import DashboardNavbar from './DashboardNavbar';
 import SkillTreeCanvas from './SkillTreeCanvas';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
-
-    // Simple user data for MVP
+    
+    // User data dengan data sebenarnya dari backend
     const userData = {
         name: user?.fullName || 'SkillForge User',
-        level: 12,
-        currentXP: 2450,
-        nextLevelXP: 3000,
-        totalXP: 15750,
-        skillsCompleted: 23,
-        avatar: user?.profilePicture || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
+        username: user?.username || 'user',
+        joinDate: user?.createdAt ? formatJoinDate(user.createdAt) : 'Baru bergabung',
+        level: 12, // TODO: Implement level system di backend
+        currentXP: 2450, // TODO: Implement XP system di backend  
+        nextLevelXP: 3000, // TODO: Implement next level XP di backend
+        totalXP: 15750, // TODO: Implement total XP di backend
+        skillsCompleted: 23, // TODO: Implement skills completion di backend
+        avatar: user?.profilePicture || '/api/placeholder/150/150'
     };
 
     const xpProgress = (userData.currentXP / userData.nextLevelXP) * 100;
@@ -42,17 +47,27 @@ const Dashboard: React.FC = () => {
                             {/* Avatar & Basic Info */}
                             <div className="flex flex-col items-center text-center lg:text-left">
                                 <div className="relative mb-4">
-                                    <img
-                                        src={userData.avatar}
-                                        alt="User Avatar"
-                                        className="w-20 h-20 rounded-full border-4 border-gold"
-                                    />
+                                    {userData.avatar && userData.avatar !== '/api/placeholder/150/150' ? (
+                                        <img
+                                            src={userData.avatar}
+                                            alt="User Avatar"
+                                            className="w-20 h-20 rounded-full border-4 border-gold object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-full border-4 border-gold bg-slate-700 flex items-center justify-center">
+                                            <User className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
                                     <div className="absolute -bottom-2 -right-2 bg-gold text-deep-navy rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
                                         {userData.level}
                                     </div>
                                 </div>
                                 <h1 className="text-2xl font-bold text-white mb-1">{userData.name}</h1>
-                                <p className="text-gold font-semibold">Level {userData.level} Learner</p>
+                                <p className="text-gold font-semibold mb-1">@{userData.username}</p>
+                                <div className="flex items-center text-gray-300 text-sm">
+                                    <Calendar className="w-4 h-4 mr-1" />
+                                    <span>Bergabung {userData.joinDate}</span>
+                                </div>
                             </div>
 
                             {/* XP Progress */}

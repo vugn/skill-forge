@@ -35,6 +35,7 @@ export function backendUserToProfile(backendUser: BackendUser): UserProfile {
     return {
         principal: backendUser.id.toString(),
         fullName: (backendUser.fullName && backendUser.fullName.length > 0) ? backendUser.fullName[0] : '',
+        username: backendUser.username,
         profilePicture: (backendUser.profilePicture && backendUser.profilePicture.length > 0) ? backendUser.profilePicture[0] : '',
         createdAt: new Date(Number(backendUser.createdAt) / 1000000), // Convert from nanoseconds
         lastLogin: new Date(Number(backendUser.lastLogin) / 1000000), // Convert from nanoseconds
@@ -54,6 +55,9 @@ export function profileToCreateData(profile: Partial<UserProfile> & { username: 
 export function profileToUpdateData(profile: Partial<UserProfile>): UserUpdateData {
     const updateData: UserUpdateData = {};
     
+    if (profile.username !== undefined) {
+        updateData.username = [profile.username];
+    }
     if (profile.fullName !== undefined) {
         updateData.fullName = profile.fullName ? [profile.fullName] : [];
     }

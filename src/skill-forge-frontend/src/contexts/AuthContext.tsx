@@ -19,15 +19,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        console.log('🔄 Initializing authentication...');
         await authService.init();
         const authenticated = authService.isAuthenticated();
+        console.log('🔐 Authentication status:', authenticated);
         setIsAuthenticated(authenticated);
 
         if (authenticated) {
+          const principal = authService.getPrincipalText();
+          console.log('👤 Principal:', principal);
           await loadUserProfile();
         }
       } catch (error) {
-        console.error('Auth initialization failed:', error);
+        console.error('❌ Auth initialization failed:', error);
       } finally {
         setLoading(false);
       }
@@ -37,18 +41,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
-   * Load user profile from storage
+   * Load user profile from backend first, then fallback to storage
    */
   const loadUserProfile = async (): Promise<void> => {
     setCheckingProfile(true);
     try {
       const principal = authService.getPrincipalText();
+      console.log('📋 Loading profile for principal:', principal);
       if (principal) {
-        const profile = await authService.loadUserProfileFromStorage(principal);
+        // Try to get user profile from backend first
+        const profile = await authService.getUserProfile(principal);
+        console.log('👤 Profile loaded:', profile);
         setUser(profile);
       }
     } catch (error) {
-      console.error('Failed to load user profile:', error);
+      console.error('❌ Failed to load user profile:', error);
     } finally {
       setCheckingProfile(false);
     }
@@ -90,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const updateUser = async (updatedData: Partial<UserProfile>): Promise<void> => {
     try {
-      if (!user || !isAuthenticated) {
+      if (!isAuthenticated) {
         throw new Error('User not authenticated');
       }
 
@@ -99,18 +106,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No principal found');
       }
 
-      // Merge updated data with existing user data
-      const updatedUser: UserProfile = {
-        ...user,
-        ...updatedData,
-        principal // Keep the original principal
-      };
-
-      // Save to localStorage
-      await authService.saveUserProfileToStorage(principal, updatedUser);
-
-      // Update local state
-      setUser(updatedUser);
+      // If we have existing user, merge the data
+      if (user) {
+        const updatedUser: UserProfile = {
+          ...user,
+          ...updatedData,
+          principal // Keep the original principal
+        };
+        
+        // Save to localStorage and backend
+        await authService.saveUserProfileToStorage(principal, updatedUser);
+        setUser(updatedUser);
+      } else {
+        // If no existing user, this is a new profile creation
+        const newUser = updatedData as UserProfile;
+        await authService.saveUserProfileToStorage(principal, newUser);
+        setUser(newUser);
+      }
     } catch (error) {
       console.error('Failed to update user profile:', error);
       throw error;

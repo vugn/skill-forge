@@ -8,18 +8,21 @@ import { UserProfile } from '../../types';
 import { Button, Input, Card } from '../ui';
 import { validateFullName, formatPrincipal } from '../../utils';
 import { ROUTES, VALIDATION } from '../../constants';
+import { useAuth } from '../../hooks';
 
 /**
  * AccountSetup component for new user profile creation
  */
 const AccountSetup: React.FC = () => {
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{ fullName?: string }>({});
+  const [errors, setErrors] = useState<{ fullName?: string; username?: string }>({});
   
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
 
   /**
    * Handle profile picture upload
@@ -50,9 +53,27 @@ const AccountSetup: React.FC = () => {
   const handleFullNameChange = (value: string): void => {
     setFullName(value);
     
+    // Auto-generate username from full name
+    const generatedUsername = value.toLowerCase().replace(/\s+/g, '').slice(0, 20);
+    setUsername(generatedUsername);
+    
     // Clear error when user starts typing
     if (errors.fullName) {
       setErrors(prev => ({ ...prev, fullName: undefined }));
+    }
+  };
+
+  /**
+   * Handle username change with validation
+   */
+  const handleUsernameChange = (value: string): void => {
+    // Only allow lowercase letters, numbers, and underscores
+    const cleanValue = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setUsername(cleanValue);
+    
+    // Clear error when user starts typing
+    if (errors.username) {
+      setErrors(prev => ({ ...prev, username: undefined }));
     }
   };
 
@@ -61,14 +82,22 @@ const AccountSetup: React.FC = () => {
    */
   const validateForm = (): boolean => {
     const nameValidation = validateFullName(fullName);
+    const newErrors: { fullName?: string; username?: string } = {};
     
     if (!nameValidation.isValid) {
-      setErrors({ fullName: nameValidation.error });
-      return false;
+      newErrors.fullName = nameValidation.error;
+    }
+
+    if (!username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    } else if (username.length > 20) {
+      newErrors.username = 'Username must be less than 20 characters';
     }
     
-    setErrors({});
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   /**
@@ -90,12 +119,17 @@ const AccountSetup: React.FC = () => {
       const profile: UserProfile = {
         principal,
         fullName: fullName.trim(),
+        username: username.trim(),
         profilePicture: profilePicture || '',
         createdAt: new Date(),
         lastLogin: new Date(),
       };
 
       await authService.saveUserProfile(profile);
+      
+      // Update user state in context
+      await updateUser(profile);
+      
       navigate(ROUTES.DASHBOARD);
     } catch (error) {
       console.error('Failed to save profile:', error);
@@ -160,7 +194,7 @@ const AccountSetup: React.FC = () => {
         </div>
 
         {/* Full Name Input */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Input
             label="Full Name"
             placeholder="Enter your full name"
@@ -170,6 +204,22 @@ const AccountSetup: React.FC = () => {
             required
             maxLength={VALIDATION.FULL_NAME.MAX_LENGTH}
           />
+        </div>
+
+        {/* Username Input */}
+        <div className="mb-8">
+          <Input
+            label="Username"
+            placeholder="Enter your username"
+            value={username}
+            onChange={handleUsernameChange}
+            error={errors.username}
+            required
+            maxLength={20}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Only lowercase letters, numbers, and underscores allowed
+          </p>
         </div>
 
         {/* Principal ID Display */}
@@ -187,7 +237,7 @@ const AccountSetup: React.FC = () => {
         {/* Save Button */}
         <Button
           onClick={handleSave}
-          disabled={saving || !fullName.trim()}
+          disabled={saving || !fullName.trim() || !username.trim()}
           loading={saving}
           icon={Save}
           className="w-full"

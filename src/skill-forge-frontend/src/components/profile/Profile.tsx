@@ -5,7 +5,7 @@ import {
     Star,
     Target,
     User,
-    X
+    X,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -18,10 +18,11 @@ const Profile: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         fullName: user?.fullName || '',
+        username: user?.username || '',
         profilePicture: user?.profilePicture || ''
     });
 
-    // Mock data simplified for MVP
+    // Mock data simplified for MVP (TODO: implement di backend)
     const learningStats = {
         totalSkillTrees: 2,
         skillsCompleted: 8
@@ -60,6 +61,7 @@ const Profile: React.FC = () => {
             // Reset form if canceling
             setEditForm({
                 fullName: user?.fullName || '',
+                username: user?.username || '',
                 profilePicture: user?.profilePicture || ''
             });
         }
@@ -70,6 +72,7 @@ const Profile: React.FC = () => {
         try {
             await updateUser({
                 fullName: editForm.fullName,
+                username: editForm.username,
                 profilePicture: editForm.profilePicture
             });
             setIsEditing(false);
@@ -144,15 +147,28 @@ const Profile: React.FC = () => {
 
                                 {/* Name Input/Display */}
                                 {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={editForm.fullName}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, fullName: e.target.value }))}
-                                        className="text-xl font-bold text-white mb-1 bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-center md:text-left focus:outline-none focus:border-gold"
-                                        placeholder="Your full name"
-                                    />
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            value={editForm.fullName}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, fullName: e.target.value }))}
+                                            className="text-xl font-bold text-white mb-1 bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-center md:text-left focus:outline-none focus:border-gold w-full"
+                                            placeholder="Your full name"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={editForm.username}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                                            className="text-sm text-gray-300 bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-center md:text-left focus:outline-none focus:border-gold w-full"
+                                            placeholder="username"
+                                            maxLength={20}
+                                        />
+                                    </div>
                                 ) : (
-                                    <h1 className="text-2xl font-bold text-white mb-1">{user?.fullName || 'Your Name'}</h1>
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-white mb-1">{user?.fullName || 'Your Name'}</h1>
+                                        <p className="text-gray-300 text-sm mb-1">@{user?.username || 'username'}</p>
+                                    </div>
                                 )}
                                 <p className="text-gold text-sm font-medium">SkillForge Learner</p>
                             </div>

@@ -4,6 +4,7 @@ import { Principal } from '@dfinity/principal';
 export interface UserProfile {
     principal: string;
     fullName: string;
+    username: string;
     profilePicture: string;
     createdAt: Date;
     lastLogin: Date;
