@@ -265,6 +265,14 @@ class AuthService implements IAuthService {
     }
 
     /**
+     * Open YouTube demo video
+     */
+    watchDemo(): void {
+        const demoUrl = 'https://youtu.be/mOZ2Ggcoa7w';
+        window.open(demoUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    /**
      * Get appropriate identity provider based on environment
      */
     private getIdentityProvider(): string {

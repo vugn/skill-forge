@@ -3,6 +3,7 @@ import { ArrowRight, Hammer, Play, Sparkles } from 'lucide-react';
 import React from 'react';
 import ICPLogo from '../../public/icp-logo.svg';
 import { useAuth } from '../hooks';
+import { authService } from '../services/auth';
 
 
 const CallToAction: React.FC = () => {
@@ -114,6 +115,7 @@ const CallToAction: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
+                  onClick={() => authService.watchDemo()}
                   className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:border-gold/50 hover:bg-gold/10 transition-all duration-300 flex items-center justify-center space-x-2"
                 >
                   <Play className="w-5 h-5" />

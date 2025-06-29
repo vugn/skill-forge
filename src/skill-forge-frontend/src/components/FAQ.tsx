@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Minus, Plus } from 'lucide-react';
 import React, { useState } from 'react';
+import { authService } from '../services/auth';
 
 const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -139,6 +140,7 @@ const FAQ: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
+                onClick={() => authService.watchDemo()}
                 className="bg-gold text-deep-navy px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-colors flex items-center space-x-2"
               >
                 <span>Watch Demo</span>
