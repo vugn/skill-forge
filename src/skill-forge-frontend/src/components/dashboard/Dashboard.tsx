@@ -91,7 +91,7 @@ interface CardPosition {
 const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
     const [skillCards, setSkillCards] = useState<SkillCard[]>([]);
     const [viewportPosition, setViewportPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
+    const [, setIsDragging] = useState(false);
     const [cardPositions, setCardPositions] = useState<Record<string, CardPosition>>({});
 
     // Helper functions outside useEffect to avoid dependency issues
