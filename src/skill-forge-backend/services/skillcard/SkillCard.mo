@@ -1,4 +1,4 @@
-import Types "./core/Types";
+import Types "../../core/Types";
 import Result "mo:base/Result";
 import Trie "mo:base/Trie";
 import Text "mo:base/Text";
@@ -11,7 +11,7 @@ import Float "mo:base/Float";
 import Error "mo:base/Error";
 
 import LLM "mo:llm";
-import Level "./core/Level";
+import Level "../../core/Level";
 
 module SkillCard {
 

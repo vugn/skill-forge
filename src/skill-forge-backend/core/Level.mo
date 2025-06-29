@@ -1,23 +1,32 @@
 import Types "./Types";
-import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 
+/// Level module handles all leveling system logic and experience calculations
+/// This module provides functions for calculating levels, experience requirements, and rewards
 module {
-    // Safe subtraction for Nat
+    
+    /// Safe subtraction for Nat values, returns 0 if result would be negative
+    /// @param a - First number
+    /// @param b - Second number to subtract
+    /// @return Result of subtraction or 0 if negative
     private func safeSub(a: Nat, b: Nat): Nat {
         if (a >= b) { a - b } else { 0 };
     };
 
-    // Experience required for each level (more reasonable for testing)
+    /// Get experience required to reach a specific level
+    /// @param level - Target level
+    /// @return Experience points required for that level
     public func getExpRequiredForLevel(level: Nat): Nat {
         if (level <= 1) {
             return 0;
         };
-        // Formula: level * 50 (more reasonable progression)
+        // Formula: level * 50 (reasonable progression)
         level * 50;
     };
 
-    // Calculate total experience required to reach a specific level
+    /// Calculate total experience required to reach a specific level
+    /// @param level - Target level
+    /// @return Total experience points needed from level 1 to target level
     public func getTotalExpForLevel(level: Nat): Nat {
         var total = 0;
         var currentLevel = 1;
@@ -28,7 +37,9 @@ module {
         total;
     };
 
-    // Calculate level from total experience
+    /// Calculate level from total experience points
+    /// @param totalExp - Total experience points
+    /// @return Current level based on experience
     public func calculateLevelFromExp(totalExp: Nat): Nat {
         var level = 1;
         var expNeeded = getTotalExpForLevel(level + 1);
@@ -41,13 +52,15 @@ module {
         level;
     };
 
-    // Get current level info
+    /// Get current level information including progress details
+    /// @param totalExp - Total experience points
+    /// @return LevelInfo containing current level, progress, and requirements
     public func getLevelInfo(totalExp: Nat): Types.LevelInfo {
         let level = calculateLevelFromExp(totalExp);
         let expForCurrentLevel = getTotalExpForLevel(level);
         let expRequiredForNextLevel = getExpRequiredForLevel(level + 1);
         
-        // Calculate current XP within the level (how much progress toward next level)
+        // Calculate current XP within the level (progress toward next level)
         let currentExp = if (totalExp >= expForCurrentLevel) {
             safeSub(totalExp, expForCurrentLevel);
         } else {
@@ -69,23 +82,16 @@ module {
         };
     };
 
-    // Add experience and check for level up
+    /// Add experience and check for level up
+    /// @param currentTotalExp - Current total experience
+    /// @param expToAdd - Experience to add
+    /// @return LevelUpResult containing new level and level up status
     public func addExperience(currentTotalExp: Nat, expToAdd: Nat): Types.LevelUpResult {
         let oldLevel = calculateLevelFromExp(currentTotalExp);
         let newTotalExp = currentTotalExp + expToAdd;
         let newLevel = calculateLevelFromExp(newTotalExp);
         let leveledUp = newLevel > oldLevel;
         let newLevelInfo = getLevelInfo(newTotalExp);
-        
-        Debug.print("=== LEVEL CALCULATION DEBUG ===");
-        Debug.print("Old total exp: " # Nat.toText(currentTotalExp));
-        Debug.print("Exp to add: " # Nat.toText(expToAdd));
-        Debug.print("New total exp: " # Nat.toText(newTotalExp));
-        Debug.print("Old level: " # Nat.toText(oldLevel));
-        Debug.print("New level: " # Nat.toText(newLevel));
-        Debug.print("Leveled up: " # debug_show(leveledUp));
-        Debug.print("New level info: " # debug_show(newLevelInfo));
-        Debug.print("================================");
         
         {
             newLevel = newLevel;
@@ -95,7 +101,9 @@ module {
         };
     };
 
-    // Experience rewards for different activities
+    /// Get experience reward for different activities
+    /// @param source - Activity type that earned experience
+    /// @return Experience points awarded for the activity
     public func getExpReward(source: Text): Nat {
         switch (source) {
             case ("daily_login") { 10 };
@@ -108,4 +116,4 @@ module {
             case (_) { 5 }; // Default reward
         };
     };
-}
+};

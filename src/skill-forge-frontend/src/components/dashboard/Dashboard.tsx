@@ -161,7 +161,7 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
             iconName: 'code',
             rarity: 'epic',
             isCompleted: true,
-            isUnlocked: true,
+            isUnlocked: false,
             currentPoints: 100,
             maxPoints: 100,
             category: 'Frontend'
@@ -173,7 +173,7 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
             iconName: 'terminal',
             rarity: 'rare',
             isCompleted: false,
-            isUnlocked: true,
+            isUnlocked: false,
             currentPoints: 75,
             maxPoints: 100,
             category: 'Programming'
@@ -185,7 +185,7 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
             iconName: 'globe',
             rarity: 'common',
             isCompleted: false,
-            isUnlocked: true,
+            isUnlocked: false,
             currentPoints: 45,
             maxPoints: 100,
             category: 'Backend'

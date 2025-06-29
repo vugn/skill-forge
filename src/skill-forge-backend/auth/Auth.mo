@@ -1,24 +1,33 @@
-import Types "./Types";
+import Types "../core/Types";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 
+/// Auth module handles all authentication and user management operations
+/// This module provides functions for user authentication, profile management, and user validation
 module {
-    // Helper function to get principal key for Trie
+    
+    /// Helper function to create a principal key for Trie operations
+    /// @param p - The principal to create a key for
+    /// @return Trie key for the principal
     private func principalKey(p: Principal) : Trie.Key<Principal> {
         { key = p; hash = Principal.hash(p) }
     };
 
-    // Authenticate or create user
+    /// Authenticate or create user with Internet Identity
+    /// @param users - Current users Trie
+    /// @param userId - User principal from Internet Identity
+    /// @param userData - User creation data
+    /// @return Result containing authentication result or error
     public func authenticateUser(users : Trie.Trie<Principal, Types.User>, userId : Principal, userData : Types.UserCreateData) : Result.Result<Types.AuthResult, Types.AuthError> {
-        // Validate principal
+        // Validate principal is not anonymous
         if (Principal.isAnonymous(userId)) { 
             return #err(#InvalidPrincipal); 
         };
 
-        // Validate username
+        // Validate username length
         if (Text.size(userData.username) < 3) {
             return #err(#UsernameInvalid);
         };
@@ -35,7 +44,7 @@ module {
         // Check if user already exists
         switch (Trie.find(users, principalKey(userId), Principal.equal)) {
             case (?existingUser) { 
-                // Update last login
+                // Update last login for existing user
                 let updatedUser : Types.User = {
                     id = existingUser.id;
                     username = existingUser.username;
@@ -54,7 +63,7 @@ module {
                 });
             };
             case (null) {
-                // Create new user
+                // Create new user with default values
                 let newUser : Types.User = {
                     id = userId;
                     username = userData.username;
@@ -75,8 +84,13 @@ module {
         };
     };
 
-    // Update user profile
+    /// Update user profile information
+    /// @param users - Current users Trie
+    /// @param userId - User principal
+    /// @param updateData - User update data
+    /// @return Result containing updated user or error
     public func updateUserProfile(users : Trie.Trie<Principal, Types.User>, userId : Principal, updateData : Types.UserUpdateData) : Result.Result<Types.User, Types.AuthError> {
+        // Validate principal is not anonymous
         if (Principal.isAnonymous(userId)) {
             return #err(#InvalidPrincipal);
         };
@@ -84,6 +98,7 @@ module {
         switch (Trie.find(users, principalKey(userId), Principal.equal)) {
             case (null) { return #err(#UserNotFound) };
             case (?user) {
+                // Handle username update with validation
                 let username = switch (updateData.username) {
                     case (null) { user.username };
                     case (?newUsername) {
@@ -91,6 +106,7 @@ module {
                             return #err(#UsernameInvalid);
                         };
 
+                        // Check if new username is different and not taken
                         if (newUsername != user.username) {
                             for ((id, existingUser) in Trie.iter(users)) {
                                 if (id != userId and Text.equal(existingUser.username, newUsername)) {
@@ -102,6 +118,7 @@ module {
                     };
                 };
 
+                // Handle optional field updates
                 let fullName = switch (updateData.fullName) {
                     case (null) { user.fullName };
                     case (?newFullName) { ?newFullName };
@@ -117,6 +134,7 @@ module {
                     case (?newExp) { newExp };
                 };
 
+                // Create updated user object
                 let updatedUser : Types.User = {
                     id = user.id;
                     username = username;
@@ -134,7 +152,10 @@ module {
         };
     };
 
-    // Get user by username
+    /// Get user by username (public query function)
+    /// @param users - Current users Trie
+    /// @param username - Username to search for
+    /// @return Optional user if found
     public func getUserByUsername(users : Trie.Trie<Principal, Types.User>, username : Text) : ?Types.User {
         for ((principal, user) in Trie.iter(users)) {
             if (user.username == username) {
@@ -144,12 +165,18 @@ module {
         return null;
     };
 
-    // Get user by principal
+    /// Get user by principal ID
+    /// @param users - Current users Trie
+    /// @param userId - User principal to search for
+    /// @return Optional user if found
     public func getUserByPrincipal(users : Trie.Trie<Principal, Types.User>, userId : Principal) : ?Types.User {
         Trie.find(users, principalKey(userId), Principal.equal);
     };
 
-    // Check if user exists
+    /// Check if user exists in the system
+    /// @param users - Current users Trie
+    /// @param userId - User principal to check
+    /// @return True if user exists, false otherwise
     public func userExists(users : Trie.Trie<Principal, Types.User>, userId : Principal) : Bool {
         switch (Trie.find(users, principalKey(userId), Principal.equal)) {
             case (?user) { true };
