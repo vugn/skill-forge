@@ -64,7 +64,7 @@ const KeyFeatures: React.FC = () => {
             Key <span className="text-gold">AI Features</span>
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Teknologi AI terdepan untuk menciptakan pengalaman belajar yang personal dan efektif.
+            Leading AI technology to create personalized and effective learning experiences.
           </p>
         </motion.div>
 
@@ -102,18 +102,15 @@ const KeyFeatures: React.FC = () => {
                   {feature.description}
                 </p>
 
-                <motion.button
-                  whileHover={{ x: 5 }}
-                  className="text-gold font-semibold text-sm flex items-center space-x-2 group-hover:text-white transition-colors"
-                >
-                  <span>Explore Feature</span>
+                <div className="text-gold font-semibold text-sm flex items-center space-x-2">
+                  <span>Feature Available</span>
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
                   >
-                    →
+                    ✓
                   </motion.div>
-                </motion.button>
+                </div>
               </motion.div>
             ))}
           </div>

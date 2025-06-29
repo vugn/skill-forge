@@ -5,12 +5,12 @@ import Loading from './common/Loading';
 
 interface PublicRouteProps {
   children: React.ReactNode;
-  redirectIfAuthenticated?: string; // Redirect ke mana jika sudah authenticated
+  redirectIfAuthenticated?: string; // Where to redirect if already authenticated
 }
 
 /**
- * PublicRoute component untuk routes yang hanya bisa diakses sebelum authentication
- * Contoh: /setup (setup profile) tidak boleh diakses jika user sudah punya profile
+ * PublicRoute component for routes that can only be accessed before authentication
+ * Example: /setup (profile setup) should not be accessible if user already has profile
  */
 const PublicRoute: React.FC<PublicRouteProps> = ({ 
   children, 
@@ -18,17 +18,17 @@ const PublicRoute: React.FC<PublicRouteProps> = ({
 }) => {
   const { isAuthenticated, user, loading, checkingProfile } = useAuth();
 
-  // Tampilkan loading saat auth masih di-check
+  // Show loading while auth is being checked
   if (loading || checkingProfile) {
     return <Loading />;
   }
 
-  // Redirect ke dashboard jika user sudah authenticated dan punya profile
+  // Redirect to dashboard if user is already authenticated and has profile
   if (isAuthenticated && user) {
     return <Navigate to={redirectIfAuthenticated} replace />;
   }
 
-  // Render children jika kondisi terpenuhi
+  // Render children if conditions are met
   return <>{children}</>;
 };
 

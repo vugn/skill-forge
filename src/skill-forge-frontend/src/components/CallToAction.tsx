@@ -94,8 +94,8 @@ const CallToAction: React.FC = () => {
               </h2>
 
               <p className="text-lg text-gray-300 mb-8 max-w-lg mx-auto lg:mx-0">
-                Bergabunglah dengan ribuan learners yang telah mentransformasi karir mereka.
-                Mulai forge skill impian Anda hari ini.
+                Join thousands of learners who have transformed their careers.
+                Start forging your dream skills today.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
@@ -114,7 +114,7 @@ const CallToAction: React.FC = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
-                  className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:border-gold/50 hover:bg-gold/10 transition-all duration-300"
+                  className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:border-gold/50 hover:bg-gold/10 transition-all duration-300 flex items-center justify-center space-x-2"
                 >
                   <Play className="w-5 h-5" />
                   <span>Watch Demo</span>

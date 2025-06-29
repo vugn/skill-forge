@@ -7,20 +7,20 @@ const Footer: React.FC = () => {
   const footerLinks = {
     about: [
       { label: 'Overview', href: '#overview' },
-      { label: 'Team', href: '#team' },
-      { label: 'Contact', href: '#contact' },
+      { label: 'Features', href: '#features' },
+      { label: 'FAQ', href: '#faq' },
     ],
     legal: [
-      { label: 'Privacy Policy', href: '#privacy' },
-      { label: 'Terms of Service', href: '#terms' },
-      { label: 'Cookie Policy', href: '#cookies' },
+      { label: 'Privacy Policy', href: '#' },
+      { label: 'Terms of Service', href: '#' },
+      { label: 'Cookie Policy', href: '#' },
     ],
   };
 
   const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter', color: 'hover:text-blue-400' },
-    { icon: MessageSquare, href: '#', label: 'Discord', color: 'hover:text-purple-400' },
-    { icon: Github, href: '#', label: 'GitHub', color: 'hover:text-gray-300' },
+    { icon: Twitter, href: '#', label: 'Twitter', color: 'hover:text-blue-400', disabled: true },
+    { icon: MessageSquare, href: '#', label: 'Discord', color: 'hover:text-purple-400', disabled: true },
+    { icon: Github, href: '#', label: 'GitHub', color: 'hover:text-gray-300', disabled: true },
   ];
 
   return (
@@ -50,20 +50,19 @@ const Footer: React.FC = () => {
             </div>
 
             <p className="text-gray-300 text-sm leading-relaxed mb-6">
-              Platform pembelajaran AI-powered yang membantu Anda membangun karir impian dengan skill terverifikasi blockchain.
+              An AI-powered learning platform that helps you build your dream career with blockchain-verified skills.
             </p>
 
             <div className="flex items-center space-x-4">
               {socialLinks.map((social, index) => (
-                <motion.a
+                <motion.div
                   key={index}
-                  href={social.href}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  className={`w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-gray-400 ${social.color} transition-colors duration-300`}
+                  whileHover={social.disabled ? {} : { scale: 1.1, y: -2 }}
+                  className={`w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-gray-400 ${social.disabled ? 'opacity-50 cursor-not-allowed' : social.color + ' transition-colors duration-300 cursor-pointer'}`}
                   aria-label={social.label}
                 >
                   <social.icon className="w-5 h-5" />
-                </motion.a>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -79,12 +78,18 @@ const Footer: React.FC = () => {
             <ul className="space-y-3">
               {footerLinks.about.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href={link.href}
-                    className="text-gray-300 hover:text-gold transition-colors duration-300 text-sm"
-                  >
-                    {link.label}
-                  </a>
+                  {link.href.startsWith('#') && link.href !== '#' ? (
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-gold transition-colors duration-300 text-sm cursor-pointer"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <span className="text-gray-500 text-sm cursor-not-allowed">
+                      {link.label}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -100,12 +105,9 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 mb-8">
               {footerLinks.legal.map((link, index) => (
                 <li key={index}>
-                  <a
-                    href={link.href}
-                    className="text-gray-300 hover:text-gold transition-colors duration-300 text-sm"
-                  >
+                  <span className="text-gray-500 text-sm cursor-not-allowed">
                     {link.label}
-                  </a>
+                  </span>
                 </li>
               ))}
             </ul>

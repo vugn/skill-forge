@@ -73,7 +73,7 @@ const Hero: React.FC = () => {
             </motion.h1>
 
             <motion.p variants={itemVariants} className="text-lg lg:text-xl text-gray-300 mb-8 max-w-lg mx-auto lg:mx-0">
-              Bangun jalur karir impianmu dengan AI yang memahami tujuanmu. Dapatkan skill terverifikasi blockchain dan wujudkan masa depan yang lebih cerah.
+              Build your dream career path with AI that understands your goals. Get blockchain-verified skills and realize a brighter future.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">

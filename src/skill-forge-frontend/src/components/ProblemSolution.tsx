@@ -6,25 +6,25 @@ const ProblemSolution: React.FC = () => {
   const problems = [
     {
       icon: MapPin,
-      problem: 'Jalur belajar tidak jelas',
+      problem: 'Unclear learning paths',
       solution: 'AI Skill Tree Generator',
-      description: 'AI kami menganalisis tujuan karirmu dan membuat skill tree yang terstruktur dan personalized untuk mencapai target.',
+      description: 'Our AI analyzes your career goals and creates structured, personalized skill trees to achieve your targets.',
       color: 'from-red-500/20 to-orange-500/20',
       borderColor: 'border-red-500/30',
     },
     {
       icon: Shield,
-      problem: 'Bingung mulai dari mana',
+      problem: 'Confused where to start',
       solution: 'Personalized Learning Path',
-      description: 'Berdasarkan background dan tujuan karirmu, kami akan memberikan urutan pembelajaran yang optimal.',
+      description: 'Based on your background and career goals, we provide an optimal learning sequence.',
       color: 'from-blue-500/20 to-purple-500/20',
       borderColor: 'border-blue-500/30',
     },
     {
       icon: Brain,
-      problem: 'Tidak ada tracking progress',
+      problem: 'No progress tracking',
       solution: 'Smart Progress Tracking',
-      description: 'Monitor perkembangan belajarmu dengan dashboard yang intuitif dan milestone yang jelas.',
+      description: 'Monitor your learning progress with an intuitive dashboard and clear milestones.',
       color: 'from-green-500/20 to-emerald-500/20',
       borderColor: 'border-green-500/30',
     },
@@ -47,10 +47,10 @@ const ProblemSolution: React.FC = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            Kenapa <span className="text-gold">SkillForge</span>?
+            Why <span className="text-gold">SkillForge</span>?
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Kami memahami tantangan yang dihadapi para pembelajar modern dan memberikan solusi yang tepat.
+            We understand the challenges faced by modern learners and provide the right solutions.
           </p>
         </motion.div>
 
@@ -98,10 +98,10 @@ const ProblemSolution: React.FC = () => {
                 className="mt-6 pt-6 border-t border-white/10"
                 whileHover={{ x: 5 }}
               >
-                <button className="text-gold font-semibold text-sm flex items-center space-x-2 group-hover:text-white transition-colors">
-                  <span>Learn More</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="text-gold font-semibold text-sm flex items-center space-x-2">
+                  <span>Coming Soon</span>
+                  <ArrowRight className="w-4 h-4 opacity-50" />
+                </div>
               </motion.div>
             </motion.div>
           ))}
@@ -119,7 +119,7 @@ const ProblemSolution: React.FC = () => {
             whileTap={{ scale: 0.97 }}
             className="bg-gradient-to-r from-gold to-yellow-400 text-deep-navy px-8 py-4 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-gold/25 transition-all duration-300"
           >
-            Mulai Perjalanan Anda
+            Start Your Journey
           </motion.button>
         </motion.div>
       </div>

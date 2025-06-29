@@ -7,7 +7,7 @@
     "setup": "npm i && dfx canister create skill-forge-backend && dfx generate skill-forge-backend && dfx deploy",
     "start": "vite --port 3000",
     "dev": "vite",
-    "prebuild": "dfx generate",
+    "prebuild": "dfx generate skill-forge-backend",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

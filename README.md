@@ -2,47 +2,47 @@
 
 > AI-Powered Skill Development Platform built on Internet Computer Protocol (ICP)
 
-**SkillForge** adalah platform pembelajaran berbasis AI yang revolusioner, dibangun di atas Internet Computer Protocol (ICP). Platform ini memungkinkan pengguna untuk membuat jalur pembelajaran yang dipersonalisasi dengan bantuan kecerdasan buatan, lengkap dengan skill card interaktif, quest pembelajaran, dan sistem tracking progress yang komprehensif.
+**SkillForge** is a revolutionary AI-powered learning platform built on the Internet Computer Protocol (ICP). This platform enables users to create personalized learning paths with the help of artificial intelligence, complete with interactive skill cards, learning quests, and comprehensive progress tracking systems.
 
 ## ✨ Key Features
 
 ### 🧠 AI-Powered Learning Path Generator
 
-- **Personalized skill cards**: Input career goal Anda dan AI akan membuat skill card yang disesuaikan dengan tujuan dan background Anda
-- **Smart Prioritization**: AI menganalisis tren industri untuk memprioritaskan skill yang paling penting
-- **Dynamic Adaptation**: skill card berkembang seiring dengan progress pembelajaran Anda
+- **Personalized skill cards**: Input your career goals and AI will create skill cards tailored to your objectives and background
+- **Smart Prioritization**: AI analyzes industry trends to prioritize the most important skills
+- **Dynamic Adaptation**: Skill cards evolve along with your learning progress
 
 ### 🎯 Interactive Learning Experience
 
-- **Visual skill cards**: Representasi visual yang menarik dari jalur pembelajaran dengan koneksi antar skill
-- **Interactive Quests**: Setiap skill dilengkapi dengan quest pembelajaran interaktif dan quiz
-- **Progress Tracking**: Sistem XP, level, dan achievement untuk memotivasi pembelajaran
-- **Real-time Updates**: Progress dan status skill ter-update secara real-time
+- **Visual skill cards**: Attractive visual representation of learning paths with connections between skills
+- **Interactive Quests**: Each skill comes with interactive learning quests and quizzes
+- **Progress Tracking**: XP system, levels, and achievements to motivate learning
+- **Real-time Updates**: Progress and skill status update in real-time
 
 ### 🎨 Modern UI/UX Design
 
-- **Glassmorphism Design**: Antarmuka modern dengan efek glass dan backdrop blur
-- **Responsive Interface**: Optimized untuk desktop dan mobile
-- **Smooth Animations**: Framer Motion animations untuk pengalaman yang fluid
-- **Dark Theme**: Professional dark theme dengan accent colors yang eye-catching
+- **Glassmorphism Design**: Modern interface with glass effects and backdrop blur
+- **Responsive Interface**: Optimized for desktop and mobile
+- **Smooth Animations**: Framer Motion animations for fluid experience
+- **Dark Theme**: Professional dark theme with eye-catching accent colors
 
 ### 🔐 Decentralized & Secure
 
-- **ICP Integration**: Built on Internet Computer Protocol untuk desentralisasi penuh
-- **Identity Management**: Secure authentication menggunakan Internet Identity
-- **Data Ownership**: User memiliki kontrol penuh atas data pembelajaran mereka
+- **ICP Integration**: Built on Internet Computer Protocol for full decentralization
+- **Identity Management**: Secure authentication using Internet Identity
+- **Data Ownership**: Users have full control over their learning data
 
 ## 🛠 Tech Stack
 
 ### Frontend
 
-- **React 18** - Modern React dengan hooks dan concurrent features
-- **TypeScript** - Type safety dan better developer experience
+- **React 18** - Modern React with hooks and concurrent features
+- **TypeScript** - Type safety and better developer experience
 - **Tailwind CSS** - Utility-first CSS framework
-- **Framer Motion** - Smooth animations dan transitions
+- **Framer Motion** - Smooth animations and transitions
 - **Lucide React** - Beautiful, customizable icons
 - **React Router** - Client-side routing
-- **Vite** - Fast build tool dan development server
+- **Vite** - Fast build tool and development server
 
 ### Backend
 
@@ -53,7 +53,7 @@
 ### Development Tools
 
 - **DFX** - DFINITY command-line execution environment
-- **ESLint** - Code linting dan formatting
+- **ESLint** - Code linting and formatting
 - **TypeScript ESLint** - TypeScript-specific linting rules
 
 ## 🚀 Getting Started
@@ -109,29 +109,29 @@ npm run setup
 
 ### 1. **Create Account**
 
-- Kunjungi homepage dan klik "Get Started"
-- Authenticate menggunakan Internet Identity
-- Setup profile dengan nama dan foto profil
+- Visit the homepage and click "Get Started"
+- Authenticate using Internet Identity
+- Set up your profile with name and profile picture
 
-### 2. **Generate AI skill card**
+### 2. **Generate AI Skill Card**
 
-- Navigate ke "Skills" page
-- Input career goal Anda (contoh: "Frontend Developer", "Data Scientist")
-- AI akan generate comprehensive skill card dengan prerequisites dan learning path
-- Review dan accept skill card yang digenerate
+- Navigate to the "Skills" page
+- Input your career goal (e.g., "Frontend Developer", "Data Scientist")
+- AI will generate a comprehensive skill card with prerequisites and learning path
+- Review and accept the generated skill card
 
 ### 3. **Start Learning**
 
-- Akses skill card melalui dashboard
-- Klik pada available skills untuk memulai quest
-- Complete quiz dan interactive challenges
-- Earn XP dan unlock new skills
+- Access skill cards through the dashboard
+- Click on available skills to start quests
+- Complete quizzes and interactive challenges
+- Earn XP and unlock new skills
 
 ### 4. **Track Progress**
 
-- Monitor progress melalui dashboard
-- View learning statistics dan achievements
-- Akses profile untuk detailed progress overview
+- Monitor progress through the dashboard
+- View learning statistics and achievements
+- Access profile for detailed progress overview
 
 ## 🏗 Project Structure
 
@@ -139,53 +139,92 @@ npm run setup
 skill-forge/
 ├── src/
 │   ├── skill-forge-backend/          # Motoko backend canister
-│   │   └── main.mo                   # Backend logic dan data management
+│   │   ├── main.mo                   # Main backend logic and API endpoints
+│   │   ├── core/                     # Core data structures and utilities
+│   │   │   ├── Types.mo              # Type definitions
+│   │   │   └── Level.mo              # Level and XP system
+│   │   ├── auth/                     # Authentication module
+│   │   │   └── Auth.mo               # User authentication logic
+│   │   ├── services/                 # Service modules
+│   │   │   ├── user/                 # User management
+│   │   │   │   └── UserService.mo    # User operations
+│   │   │   ├── skillcard/            # Skill card system
+│   │   │   │   ├── SkillCard.mo      # AI skill card generation
+│   │   │   │   └── SkillCardService.mo # Skill card operations
+│   │   │   └── storage/              # Data storage
+│   │   │       └── Storage.mo        # Storage utilities
+│   │   └── ARCHITECTURE.md           # Backend architecture documentation
 │   └── skill-forge-frontend/         # React frontend application
 │       ├── src/
 │       │   ├── components/           # React components
 │       │   │   ├── ai/              # AI-related components
-│       │   │   ├── dashboard/       # Dashboard dan skill card
+│       │   │   ├── dashboard/       # Dashboard and skill cards
 │       │   │   ├── profile/         # User profile management
-│       │   │   ├── skills/          # Skills dan learning paths
+│       │   │   ├── skills/          # Skills and learning paths
+│       │   │   ├── account/         # Account setup
+│       │   │   ├── common/          # Common components
 │       │   │   └── ui/              # Reusable UI components
 │       │   ├── contexts/            # React contexts
 │       │   ├── hooks/               # Custom React hooks
 │       │   ├── services/            # API services
 │       │   ├── types/               # TypeScript type definitions
-│       │   └── utils/               # Utility functions
+│       │   ├── utils/               # Utility functions
+│       │   └── constants/           # Application constants
 │       └── public/                  # Static assets
 ├── dfx.json                         # DFX configuration
+├── mops.toml                        # Motoko package manager
 └── package.json                     # Root package configuration
 ```
 
+## 🏛️ Backend Architecture
+
+The backend follows a clean, modular architecture with clear separation of concerns:
+
+### Core Modules
+- **Types.mo**: Central type definitions for all data structures
+- **Level.mo**: Experience points and leveling system logic
+
+### Authentication Layer
+- **Auth.mo**: User authentication, profile management, and Internet Identity integration
+
+### Service Layer
+- **UserService.mo**: User operations and profile management
+- **SkillCard.mo**: AI-powered skill card generation using LLM
+- **SkillCardService.mo**: Skill card operations and quest management
+- **Storage.mo**: Data persistence and storage utilities
+
+### Main Entry Point
+- **main.mo**: API endpoints and business logic orchestration
+
+
 ## 🎯 Core Components
 
-### AI Skill Cards Generator (`/skills`)
+### AI Skill Card Generator (`/skills`)
 
-Komponen utama yang memungkinkan user untuk:
+Main component that allows users to:
 
-- Input career goals dan background
-- Generate personalized skill cards menggunakan AI
-- Preview dan customize skill cards sebelum accept
-- View detailed skill information dan prerequisites
+- Input career goals and background
+- Generate personalized skill cards using AI
+- Preview and customize skill cards before acceptance
+- View detailed skill information and prerequisites
 
 ### Interactive Dashboard (`/dashboard`)
 
-Central hub yang menampilkan:
+Central hub that displays:
 
-- User profile dan learning statistics
-- Interactive skill card canvas dengan zoom dan drag functionality
-- Progress tracking dan XP system
-- Quick access ke available skills dan quests
+- User profile and learning statistics
+- Interactive skill card canvas with zoom and drag functionality
+- Progress tracking and XP system
+- Quick access to available skills and quests
 
 ### Learning Path Detail (`/learning-path/:id`)
 
-Detailed view untuk setiap learning path:
+Detailed view for each learning path:
 
 - Full-screen interactive skill card
-- Skill sidebar dengan detailed information
-- Quest modal dengan interactive quizzes
-- Progress tracking dan completion management
+- Skills sidebar with detailed information
+- Quest modal with interactive quizzes
+- Progress tracking and completion management
 
 ### User Profile (`/profile`)
 
@@ -193,31 +232,31 @@ Comprehensive profile management:
 
 - Personal information editing
 - Learning statistics overview
-- skill cards progress tracking
+- Skill card progress tracking
 - Achievement system
 
 ## 🎨 Design System
 
 ### Color Palette
 
-- **Primary**: Deep Navy (`#0B1426`) dan Dark Blue (`#1E293B`)
-- **Accent**: Gold (`#F59E0B`) untuk highlights dan CTAs
-- **Success**: Green (`#10B981`) untuk completed items
-- **Warning**: Orange (`#F97316`) untuk in-progress items
-- **Info**: Blue (`#3B82F6`) untuk available items
+- **Primary**: Deep Navy (`#0B1426`) and Dark Blue (`#1E293B`)
+- **Accent**: Gold (`#F59E0B`) for highlights and CTAs
+- **Success**: Green (`#10B981`) for completed items
+- **Warning**: Orange (`#F97316`) for in-progress items
+- **Info**: Blue (`#3B82F6`) for available items
 
 ### Typography
 
 - **Headings**: Bold, high contrast
 - **Body**: Clean, readable typography
-- **Code**: Monospace untuk technical content
+- **Code**: Monospace for technical content
 
 ### Animations
 
-- **Smooth Transitions**: Framer Motion untuk seamless interactions
-- **Loading States**: Skeleton loading dan progress indicators
-- **Hover Effects**: Subtle scale dan color transitions
-- **Progress Animations**: Animated progress bars dan XP counters
+- **Smooth Transitions**: Framer Motion for seamless interactions
+- **Loading States**: Skeleton loading and progress indicators
+- **Hover Effects**: Subtle scale and color transitions
+- **Progress Animations**: Animated progress bars and XP counters
 
 ## 🔧 Development Scripts
 
@@ -236,26 +275,25 @@ npm run deploy:local    # Deploy to local network (explicit)
 npm run deploy:ic       # Deploy to IC mainnet
 
 # Maintenance
-npm run clean           # Clean build artifacts dan stop dfx
+npm run clean           # Clean build artifacts and stop dfx
 npm run generate        # Generate canister declarations
 npm test               # Run tests
 ```
 
 ## 🎯 Target Users
 
-- **Career Changers**: Professionals yang ingin transition ke tech industry
-- **Students**: Mahasiswa yang ingin structured learning path
-- **Self-Learners**: Individuals yang prefer personalized learning approach
-- **Professionals**: Working professionals yang ingin upskill
+- **Career Changers**: Professionals looking to transition to the tech industry
+- **Students**: Students seeking structured learning paths
+- **Self-Learners**: Individuals who prefer personalized learning approaches
+- **Professionals**: Working professionals looking to upskill
 
 ## 🚀 Future Roadmap
 
-- [ ] **Social Learning**: Collaborative learning dan peer reviews
-- [ ] **Certification System**: Verifiable certificates on blockchain
-- [ ] **Marketplace**: Course content marketplace
-- [ ] **Mentorship Platform**: Connect dengan industry mentors
-- [ ] **Company Integration**: Corporate training solutions
-- [ ] **Mobile App**: Native mobile applications
+- [ ] **System Rank**: Introduce a global ranking system where users can compare their progress and achievements with others on the platform.
+- [ ] **Daily Quest**: Add daily learning challenges and quests to encourage consistent engagement and reward users with XP or badges.
+- [ ] **Guild**: Enable users to form or join guilds (learning groups) for collaborative quests, group discussions, and peer support.
+- [ ] **AI Mentor**: Integrate an AI-powered mentor that provides personalized feedback, study tips, and adaptive learning recommendations.
+- [ ] **World Challenge**: Launch periodic platform-wide challenges where users collaborate or compete to solve real-world problems and unlock exclusive rewards.
 
 ## 📄 License
 
@@ -263,21 +301,12 @@ This project is licensed under the MIT License.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our contributing guidelines dan submit pull requests untuk improvements.
+Contributions are welcome! Please read our contributing guidelines and submit pull requests for improvements.
 
 ## 📞 Support
 
-For support dan questions, please open an issue on GitHub atau contact our team.
+For support and questions, please open an issue on GitHub or contact our team.
 
 ---
 
 **Built with ❤️ on Internet Computer Protocol**
-
-### Note on frontend environment variables
-
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
-
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor

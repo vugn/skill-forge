@@ -16,7 +16,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<Home />} />
           
-          {/* Setup route - hanya untuk user yang authenticated tapi belum setup profile */}
+          {/* Setup route - for authenticated users who haven't set up their profile */}
           <Route 
             path="/setup" 
             element={
@@ -26,7 +26,7 @@ function App() {
             } 
           />
           
-          {/* Protected routes - memerlukan authentication dan profile */}
+          {/* Protected routes - requires authentication and profile */}
           <Route 
             path="/dashboard" 
             element={

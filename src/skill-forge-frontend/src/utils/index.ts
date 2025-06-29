@@ -71,20 +71,20 @@ export const generateUsername = (fullName: string): string => {
         return 'user';
     }
 
-    // Ambil kata pertama dan convert ke lowercase
+    // Get first word and convert to lowercase
     const firstName = fullName.trim().split(' ')[0].toLowerCase();
 
-    // Hapus karakter non-alphanumeric dan ganti dengan underscore
+    // Remove non-alphanumeric characters and replace with underscore
     const cleanUsername = firstName.replace(/[^a-z0-9]/g, '_');
 
     return cleanUsername || 'user';
 };
 
 /**
- * Format tanggal join user
+ * Format user join date
  */
 export const formatJoinDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'long',
     }).format(date);

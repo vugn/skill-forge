@@ -5,11 +5,11 @@ import Loading from './common/Loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireProfile?: boolean; // Apakah route memerlukan profile lengkap
+  requireProfile?: boolean; // Whether route requires complete profile
 }
 
 /**
- * ProtectedRoute component untuk melindungi routes yang memerlukan autentikasi
+ * ProtectedRoute component to protect routes that require authentication
  */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
@@ -27,26 +27,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     path: location.pathname
   });
 
-  // Tampilkan loading saat auth masih di-check
+  // Show loading while auth is being checked
   if (loading || checkingProfile) {
     console.log('⏳ Still loading...');
     return <Loading />;
   }
 
-  // Redirect ke home jika tidak authenticated
+  // Redirect to home if not authenticated
   if (!isAuthenticated) {
     console.log('❌ Not authenticated, redirecting to home');
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // Redirect ke setup jika user authenticated tapi belum ada profile
+  // Redirect to setup if user authenticated but no profile
   if (requireProfile && !user) {
     console.log('👤 Authenticated but no profile, redirecting to setup');
     return <Navigate to="/setup" replace />;
   }
 
   console.log('✅ Access granted');
-  // Render children jika semua kondisi terpenuhi
+  // Render children if all conditions are met
   return <>{children}</>;
 };
 

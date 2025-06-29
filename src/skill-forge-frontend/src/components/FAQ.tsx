@@ -7,24 +7,24 @@ const FAQ: React.FC = () => {
 
   const faqs = [
     {
-      question: 'Bagaimana cara mulai menggunakan SkillForge?',
-      answer: 'Mulai dengan mendaftar dan input career goal yang ingin Anda capai, seperti "Frontend Developer" atau "Data Scientist". AI kami akan menganalisis tujuan Anda dan generate skill tree yang komprehensif dalam hitungan detik.'
+      question: 'How do I start using SkillForge?',
+      answer: 'Begin by signing up and inputting your desired career goal, such as "Frontend Developer" or "Data Scientist". Our AI will analyze your goal and generate a comprehensive skill tree in seconds.'
     },
     {
-      question: 'Seberapa akurat AI dalam membuat skill tree?',
-      answer: 'AI kami dilatih menggunakan data industri terkini dan path pembelajaran yang sudah terbukti sukses. Skill tree yang dihasilkan mengikuti standar industri dan dapat disesuaikan berdasarkan background dan preferensi learning pace Anda.'
+      question: 'How accurate is the AI in creating skill trees?',
+      answer: 'Our AI is trained using current industry data and proven successful learning paths. The generated skill trees follow industry standards and can be customized based on your background and learning pace preferences.'
     },
     {
-      question: 'Bisakah saya generate multiple skill trees untuk berbagai karir?',
-      answer: 'Tentu saja! Anda bisa generate sebanyak mungkin skill trees untuk eksplorasi berbagai jalur karir. Bandingkan skill trees yang berbeda untuk menemukan path yang paling sesuai dengan minat dan kemampuan Anda.'
+      question: 'Can I generate multiple skill trees for different careers?',
+      answer: 'Absolutely! You can generate as many skill trees as you want to explore various career paths. Compare different skill trees to find the path that best suits your interests and abilities.'
     },
     {
-      question: 'Bagaimana cara tracking progress pembelajaran saya?',
-      answer: 'Setiap skill tree dilengkapi dengan progress tracker yang intuitif. Anda bisa menandai skill yang sudah dipelajari, melihat estimasi waktu remaining, dan monitoring overall progress menuju career goal Anda.'
+      question: 'How do I track my learning progress?',
+      answer: 'Each skill tree comes with an intuitive progress tracker. You can mark completed skills, view remaining time estimates, and monitor overall progress toward your career goal.'
     },
     {
-      question: 'Apakah bisa customize atau edit skill tree yang sudah dihasilkan?',
-      answer: 'Saat ini skill tree yang dihasilkan AI sudah dioptimalkan berdasarkan best practices industri. Namun kami sedang mengembangkan fitur customization yang akan memungkinkan Anda untuk modify dan personalize skill tree sesuai kebutuhan.'
+      question: 'Can I customize or edit the generated skill tree?',
+      answer: 'Currently, the AI-generated skill trees are already optimized based on industry best practices. However, we are developing customization features that will allow you to modify and personalize skill trees according to your needs.'
     }
   ];
 
@@ -52,7 +52,7 @@ const FAQ: React.FC = () => {
             Frequently Asked <span className="text-gold">Questions</span>
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Temukan jawaban untuk pertanyaan yang sering diajukan tentang SkillForge.
+            Find answers to frequently asked questions about SkillForge.
           </p>
         </motion.div>
 
@@ -130,25 +130,18 @@ const FAQ: React.FC = () => {
         >
           <div className="bg-gradient-to-r from-purple/20 to-gold/20 backdrop-blur-sm rounded-2xl p-8 border border-white/20 max-w-2xl mx-auto">
             <h3 className="text-xl font-bold text-white mb-4">
-              Masih ada pertanyaan?
+              Still have questions?
             </h3>
             <p className="text-gray-300 mb-6">
-              Tim support kami siap membantu Anda 24/7 melalui live chat atau email.
+              Check out our watch demo to see SkillForge in action.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
-                className="bg-gold text-deep-navy px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-colors"
+                className="bg-gold text-deep-navy px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-colors flex items-center space-x-2"
               >
-                Contact Support
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                className="border-2 border-gold text-gold px-6 py-3 rounded-lg font-semibold hover:bg-gold hover:text-deep-navy transition-all duration-300"
-              >
-                Join Community
+                <span>Watch Demo</span>
               </motion.button>
             </div>
           </div>
