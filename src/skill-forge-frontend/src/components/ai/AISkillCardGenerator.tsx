@@ -4,7 +4,6 @@ import { ArrowRight, X, Code, Database, Zap, Palette, Smartphone, Globe, Brain, 
 import { canisterService } from '../../services/canister';
 import { authService } from '../../services/auth';
 import { useAuth } from '../../hooks/useAuth';
-import LevelingTest from './test';
 
 // --- CUSTOM STYLES FOR CARD EFFECTS ---
 const cardStyles = `
@@ -879,7 +878,6 @@ const AISkillCardGenerator: React.FC = () => {
                         // Complete the skill to unlock dependencies and get additional XP
                         try {
                             // Find which skill tree this quest belongs to
-                            // For now, we'll need to find the skill tree that contains this quest
                             const currentTrees = generatedCards.filter(tree => 
                                 tree.skills.some(skill => skill.questId === activeQuest.id)
                             );
@@ -914,11 +912,7 @@ const AISkillCardGenerator: React.FC = () => {
                         await loadUserSkillCards();
                         
                         // Refresh user profile to update XP/Level in UI
-                        try {
-                            await refreshUserProfile();
-                        } catch (error) {
-                            console.error('Failed to refresh user profile:', error);
-                        }
+                        await refreshUserProfile();
                         
                         // Show success message with XP and level info
                         let successMessage = `🎉 Quest Completed!\nScore: ${Number(questResult.score)}/${Number(questResult.totalQuestions)}`;
@@ -995,9 +989,6 @@ const AISkillCardGenerator: React.FC = () => {
                 </div>
             )}
             <div className="max-w-7xl mx-auto p-6 space-y-8">
-                {/* Leveling Test Component */}
-                <LevelingTest />
-
                 {/* Generator Input */}
                 <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 md:p-8">
                     <div className="flex flex-col gap-4">
