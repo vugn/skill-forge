@@ -69,29 +69,8 @@ actor SkillForge {
         switch (Auth.getUserByPrincipal(users, userId)) {
             case (?existingUser) { #ok(existingUser) };
             case (null) {
-                // Auto-create user with default data if they don't exist
-                let defaultUserData : Types.UserCreateData = {
-                    username = "user" # Principal.toText(userId);
-                    fullName = null;
-                    profilePicture = null;
-                };
-                
-                switch (Auth.authenticateUser(users, userId, defaultUserData)) {
-                    case (#ok(authResult)) {
-                        users := Trie.put(users, principalKey(userId), Principal.equal, authResult.user).0;
-                        #ok(authResult.user);
-                    };
-                    case (#err(error)) {
-                        let errorMessage = switch (error) {
-                            case (#UserNotFound) { "User not found" };
-                            case (#InvalidPrincipal) { "Invalid principal" };
-                            case (#UsernameTaken) { "Username taken" };
-                            case (#UsernameInvalid) { "Username invalid" };
-                            case (#UpdateFailed) { "Update failed" };
-                        };
-                        #err("Failed to create user: " # errorMessage);
-                    };
-                };
+                // Don't auto-create users - they must go through proper setup
+                #err("User not found. Please complete account setup first.");
             };
         };
     };
@@ -263,34 +242,10 @@ actor SkillForge {
     public shared (msg) func generateSkillCard(request : Types.SkillCardRequest) : async Result.Result<Types.SkillCardGeneration, Text> {
         let userId = msg.caller;
 
-        // Check if user exists, create if not
-        let user = switch (Auth.getUserByPrincipal(users, userId)) {
-            case (?existingUser) { existingUser };
-            case (null) {
-                // Auto-create user with default data if they don't exist
-                let defaultUserData : Types.UserCreateData = {
-                    username = "user" # Principal.toText(userId);
-                    fullName = null;
-                    profilePicture = null;
-                };
-                
-                switch (Auth.authenticateUser(users, userId, defaultUserData)) {
-                    case (#ok(authResult)) {
-                        users := Trie.put(users, principalKey(userId), Principal.equal, authResult.user).0;
-                        authResult.user;
-                    };
-                    case (#err(error)) {
-                        let errorMessage = switch (error) {
-                            case (#UserNotFound) { "User not found" };
-                            case (#InvalidPrincipal) { "Invalid principal" };
-                            case (#UsernameTaken) { "Username taken" };
-                            case (#UsernameInvalid) { "Username invalid" };
-                            case (#UpdateFailed) { "Update failed" };
-                        };
-                        return #err("Failed to create user: " # errorMessage);
-                    };
-                };
-            };
+        // Ensure user exists - don't auto-create
+        let user = switch (ensureUserExists(userId)) {
+            case (#ok(user)) { user };
+            case (#err(error)) { return #err(error) };
         };
 
         switch (await SkillCard.generateSkillCard(request, userId)) {
@@ -319,6 +274,12 @@ actor SkillForge {
     // Accept a skill card
     public shared (msg) func acceptSkillCard(skillCardId : Text) : async Result.Result<Types.SkillCard, Text> {
         let userId = msg.caller;
+
+        // Ensure user exists - don't auto-create
+        let user = switch (ensureUserExists(userId)) {
+            case (#ok(user)) { user };
+            case (#err(error)) { return #err(error) };
+        };
 
         switch (SkillCard.acceptSkillCard(skillCards, skillCardId, userId)) {
             case (#ok(acceptedCard)) {
@@ -360,6 +321,12 @@ actor SkillForge {
     public shared (msg) func declineSkillCard(skillCardId : Text) : async Result.Result<Bool, Text> {
         let userId = msg.caller;
 
+        // Ensure user exists - don't auto-create
+        let user = switch (ensureUserExists(userId)) {
+            case (#ok(user)) { user };
+            case (#err(error)) { return #err(error) };
+        };
+
         switch (SkillCard.declineSkillCard(skillCards, skillCardId, userId)) {
             case (#ok(declinedCard)) {
                 // Update skill card in storage
@@ -382,6 +349,13 @@ actor SkillForge {
     // Get user's skill cards
     public shared (msg) func getUserSkillCards() : async [Types.SkillCard] {
         let userId = msg.caller;
+        
+        // Ensure user exists - don't auto-create
+        let user = switch (ensureUserExists(userId)) {
+            case (#ok(user)) { user };
+            case (#err(_)) { return [] }; // Return empty array if user doesn't exist
+        };
+        
         SkillCard.getUserSkillCards(skillCards, userId);
     };
 
@@ -398,6 +372,13 @@ actor SkillForge {
     // Get user progress for a skill card
     public shared (msg) func getUserSkillProgress(skillCardId : Text) : async ?Types.UserSkillProgress {
         let userId = msg.caller;
+        
+        // Ensure user exists - don't auto-create
+        let user = switch (ensureUserExists(userId)) {
+            case (#ok(user)) { user };
+            case (#err(_)) { return null }; // Return null if user doesn't exist
+        };
+        
         let progressKey = SkillCard.createProgressKey(userId, skillCardId);
         Trie.find(userProgress, textKey(progressKey), Text.equal);
     };
