@@ -9,6 +9,8 @@ import Time "mo:base/Time";
 import Text "mo:base/Text";
 import Array "mo:base/Array";
 import Float "mo:base/Float";
+import Debug "mo:base/Debug";
+import Nat "mo:base/Nat";
 
 actor SkillForge {
     // Stable storage for users
@@ -147,8 +149,18 @@ actor SkillForge {
     public shared (msg) func addExperience(amount : Nat, _source : Text) : async Result.Result<Types.LevelUpResult, Text> {
         let userId = msg.caller;
 
+        Debug.print("=== ADDING EXPERIENCE ===");
+        Debug.print("User ID: " # Principal.toText(userId));
+        Debug.print("Amount: " # Nat.toText(amount));
+        Debug.print("Source: " # _source);
+
         switch (Auth.getUserByPrincipal(users, userId)) {
             case (?user) {
+                Debug.print("Current user state:");
+                Debug.print("  Level: " # Nat.toText(user.level));
+                Debug.print("  Experience: " # Nat.toText(user.experience));
+                Debug.print("  Total Experience: " # Nat.toText(user.totalExperience));
+
                 let levelUpResult = Level.addExperience(user.totalExperience, amount);
 
                 // Update user with new experience and level
@@ -164,12 +176,24 @@ actor SkillForge {
                     totalExperience = levelUpResult.newLevelInfo.totalExp;
                 };
 
+                Debug.print("Updated user state:");
+                Debug.print("  Level: " # Nat.toText(updatedUser.level));
+                Debug.print("  Experience: " # Nat.toText(updatedUser.experience));
+                Debug.print("  Total Experience: " # Nat.toText(updatedUser.totalExperience));
+
                 // Save updated user
                 users := Trie.put(users, principalKey(userId), Principal.equal, updatedUser).0;
 
+                Debug.print("User saved to storage");
+                Debug.print("=====================");
+
                 #ok(levelUpResult);
             };
-            case (null) { #err("User not found") };
+            case (null) { 
+                Debug.print("User not found!");
+                Debug.print("=====================");
+                #err("User not found") 
+            };
         };
     };
 
@@ -177,12 +201,32 @@ actor SkillForge {
     public shared (msg) func getLevelInfo() : async Result.Result<Types.LevelInfo, Text> {
         let userId = msg.caller;
 
+        Debug.print("=== GETTING LEVEL INFO ===");
+        Debug.print("User ID: " # Principal.toText(userId));
+
         switch (Auth.getUserByPrincipal(users, userId)) {
             case (?user) {
+                Debug.print("User found:");
+                Debug.print("  Level: " # Nat.toText(user.level));
+                Debug.print("  Experience: " # Nat.toText(user.experience));
+                Debug.print("  Total Experience: " # Nat.toText(user.totalExperience));
+
                 let levelInfo = Level.getLevelInfo(user.totalExperience);
+                
+                Debug.print("Calculated level info:");
+                Debug.print("  Level: " # Nat.toText(levelInfo.level));
+                Debug.print("  Current Exp: " # Nat.toText(levelInfo.currentExp));
+                Debug.print("  Exp to Next Level: " # Nat.toText(levelInfo.expToNextLevel));
+                Debug.print("  Total Exp: " # Nat.toText(levelInfo.totalExp));
+                Debug.print("=======================");
+
                 #ok(levelInfo);
             };
-            case (null) { #err("User not found") };
+            case (null) { 
+                Debug.print("User not found!");
+                Debug.print("=======================");
+                #err("User not found") 
+            };
         };
     };
 
@@ -445,7 +489,12 @@ actor SkillForge {
 
     // Submit quest answers and get score
     public shared (msg) func submitQuestAnswers(questId : Text, answers : [Nat]) : async Result.Result<{ score : Nat; passed : Bool; totalQuestions : Nat; expGained : Nat; levelUpResult : [Types.LevelUpResult] }, Text> {
-        let _userId = msg.caller;
+        let userId = msg.caller;
+
+        Debug.print("=== SUBMITTING QUEST ANSWERS ===");
+        Debug.print("User ID: " # Principal.toText(userId));
+        Debug.print("Quest ID: " # questId);
+        Debug.print("Answers: " # debug_show(answers));
 
         switch (Trie.find(quests, textKey(questId), Text.equal)) {
             case (?quest) {
@@ -456,44 +505,84 @@ actor SkillForge {
                 var correctAnswers : Nat = 0;
                 let totalQuestions = quest.questions.size();
 
+                Debug.print("Total questions: " # Nat.toText(totalQuestions));
+
                 for (i in quest.questions.keys()) {
                     if (i < answers.size() and quest.questions[i].correctAnswer == answers[i]) {
                         correctAnswers += 1;
+                        Debug.print("Question " # Nat.toText(i) # " correct");
+                    } else {
+                        Debug.print("Question " # Nat.toText(i) # " incorrect - expected: " # 
+                                   Nat.toText(quest.questions[i].correctAnswer) # ", got: " # 
+                                   (if (i < answers.size()) Nat.toText(answers[i]) else "no answer"));
                     };
                 };
 
-                let score = correctAnswers * 100 / totalQuestions;
-                let passed = Float.fromInt(score) >= (quest.passingThreshold * 100.0);
+                Debug.print("Correct answers: " # Nat.toText(correctAnswers));
+
+                // Fix score calculation to avoid integer division issues
+                let scorePercentage = if (totalQuestions > 0) {
+                    (correctAnswers * 100) / totalQuestions
+                } else { 0 };
+                
+                Debug.print("Score percentage: " # Nat.toText(scorePercentage) # "%");
+                Debug.print("Passing threshold: " # Float.toText(quest.passingThreshold * 100.0) # "%");
+
+                let passed = Float.fromInt(scorePercentage) >= (quest.passingThreshold * 100.0);
+                Debug.print("Quest passed: " # debug_show(passed));
 
                 var expGained : Nat = 0;
                 var levelUpResult : [Types.LevelUpResult] = [];
 
                 // Award experience points if quest is passed
                 if (passed) {
-                    // Calculate XP based on quest points and score
+                    // Calculate XP: base points + bonus for performance
                     let baseExp = quest.points;
-                    expGained := (baseExp * score) / 100;
+                    let bonusExp = if (scorePercentage >= 95) {
+                        baseExp / 2; // 50% bonus for 95%+ score
+                    } else if (scorePercentage >= 85) {
+                        baseExp / 4; // 25% bonus for 85%+ score
+                    } else if (scorePercentage >= 75) {
+                        baseExp / 10; // 10% bonus for 75%+ score
+                    } else {
+                        0; // No bonus below 75%
+                    };
+                    
+                    expGained := baseExp + bonusExp;
+                    
+                    Debug.print("Base EXP: " # Nat.toText(baseExp));
+                    Debug.print("Bonus EXP: " # Nat.toText(bonusExp));
+                    Debug.print("Total EXP gained: " # Nat.toText(expGained));
                     
                     // Add experience to user
                     switch (await addExperience(expGained, "quest_completion")) {
                         case (#ok(levelResult)) {
                             levelUpResult := [levelResult];
+                            Debug.print("Level up result: " # debug_show(levelResult));
                         };
-                        case (#err(_)) {
+                        case (#err(error)) {
+                            Debug.print("Failed to add experience: " # error);
                             // Continue even if XP addition fails
                         };
                     };
+                } else {
+                    Debug.print("No EXP awarded - quest failed");
                 };
 
+                Debug.print("=== QUEST SUBMISSION COMPLETE ===");
+
                 #ok({
-                    score = score;
+                    score = scorePercentage;
                     passed = passed;
                     totalQuestions = totalQuestions;
                     expGained = expGained;
                     levelUpResult = levelUpResult;
                 });
             };
-            case (null) { #err("Quest not found") };
+            case (null) { 
+                Debug.print("Quest not found: " # questId);
+                #err("Quest not found"); 
+            };
         };
     };
 
@@ -505,6 +594,57 @@ actor SkillForge {
     // Get all skill cards (for testing)
     public query func getAllSkillCards() : async [Types.SkillCard] {
         Trie.toArray<Text, Types.SkillCard, Types.SkillCard>(skillCards, func(k : Text, v : Types.SkillCard) : Types.SkillCard { v });
+    };
+
+    // Test function to verify leveling system
+    public shared (msg) func testLeveling() : async Result.Result<{ oldLevel : Nat; newLevel : Nat; expGained : Nat; leveledUp : Bool }, Text> {
+        let userId = msg.caller;
+
+        switch (Auth.getUserByPrincipal(users, userId)) {
+            case (?user) {
+                Debug.print("=== TESTING LEVELING SYSTEM ===");
+                Debug.print("User: " # user.username);
+                Debug.print("Current level: " # Nat.toText(user.level));
+                Debug.print("Current total exp: " # Nat.toText(user.totalExperience));
+
+                // Add 100 XP to test leveling
+                let testExp = 100;
+                let levelUpResult = Level.addExperience(user.totalExperience, testExp);
+
+                Debug.print("Test result:");
+                Debug.print("  Old level: " # Nat.toText(user.level));
+                Debug.print("  New level: " # Nat.toText(levelUpResult.newLevel));
+                Debug.print("  Exp gained: " # Nat.toText(levelUpResult.expGained));
+                Debug.print("  Leveled up: " # debug_show(levelUpResult.leveledUp));
+
+                // Update user with new experience and level
+                let updatedUser : Types.User = {
+                    id = user.id;
+                    username = user.username;
+                    fullName = user.fullName;
+                    profilePicture = user.profilePicture;
+                    createdAt = user.createdAt;
+                    lastLogin = user.lastLogin;
+                    level = levelUpResult.newLevel;
+                    experience = levelUpResult.newLevelInfo.currentExp;
+                    totalExperience = levelUpResult.newLevelInfo.totalExp;
+                };
+
+                // Save updated user
+                users := Trie.put(users, principalKey(userId), Principal.equal, updatedUser).0;
+
+                Debug.print("User updated in storage");
+                Debug.print("=======================");
+
+                #ok({
+                    oldLevel = user.level;
+                    newLevel = levelUpResult.newLevel;
+                    expGained = testExp;
+                    leveledUp = levelUpResult.leveledUp;
+                });
+            };
+            case (null) { #err("User not found") };
+        };
     };
 
 };

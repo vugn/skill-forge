@@ -9,7 +9,7 @@ const KeyFeatures: React.FC = () => {
   const features = [
     {
       icon: Brain,
-      title: 'AI Skill Tree Generator',
+      title: 'AI Skill Card Generator',
       description: 'Input your career goal and get a personalized, comprehensive skill tree with clear learning paths.',
       gradient: 'from-purple-500 to-purple-700',
       bgGradient: 'from-purple-500/20 to-purple-700/20',

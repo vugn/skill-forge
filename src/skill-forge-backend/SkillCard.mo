@@ -67,8 +67,10 @@ module SkillCard {
         // Parse skills manually from JSON string
         switch (extractSkillsFromJsonString(cleanedContent)) {
             case (#ok(skills)) {
-                let response : LLMResponse = { learningPath = skills };
-                Debug.print("✅ Skills parsed successfully: " # Nat.toText(skills.size()) # " skills");
+                // Validate skills before returning
+                let validatedSkills = validateAndFixSkills(skills);
+                let response : LLMResponse = { learningPath = validatedSkills };
+                Debug.print("✅ Skills parsed successfully: " # Nat.toText(validatedSkills.size()) # " skills");
                 #ok(response);
             };
             case (#err(error)) {
@@ -351,28 +353,99 @@ module SkillCard {
         };
     };
 
+    // Validate and fix skills to ensure they have proper structure
+    private func validateAndFixSkills(skills: [LLMSkill]) : [LLMSkill] {
+        var validatedSkills: [LLMSkill] = [];
+        
+        for (skill in skills.vals()) {
+            // Ensure skill has minimum required fields
+            let validatedSkill: LLMSkill = {
+                skillName = if (Text.size(skill.skillName) > 0) { skill.skillName } else { "Skill " # Nat.toText(validatedSkills.size() + 1) };
+                description = if (Text.size(skill.description) > 0) { skill.description } else { "Learn " # skill.skillName };
+                iconName = skill.iconName;
+                dependencies = skill.dependencies;
+                questTitle = if (Text.size(skill.questTitle) > 0) { skill.questTitle } else { skill.skillName # " Quest" };
+                questions = validateAndFixQuestions(skill.questions);
+                maxPoints = switch (skill.maxPoints) {
+                    case (?points) { ?Nat.max(points, 50) }; // Minimum 50 points
+                    case (null) { ?100 };
+                };
+            };
+            
+            // Only add skills that have at least one valid question
+            if (validatedSkill.questions.size() > 0) {
+                validatedSkills := Array.append(validatedSkills, [validatedSkill]);
+            };
+        };
+        
+        validatedSkills;
+    };
+
+    // Validate and fix questions to ensure they have proper structure
+    private func validateAndFixQuestions(questions: [LLMQuestion]) : [LLMQuestion] {
+        var validatedQuestions: [LLMQuestion] = [];
+        
+        for (question in questions.vals()) {
+            // Ensure question has minimum required fields
+            if (Text.size(question.text) > 0 and question.options.size() >= 2) {
+                let validatedQuestion: LLMQuestion = {
+                    text = question.text;
+                    options = if (question.options.size() >= 3) { 
+                        question.options 
+                    } else { 
+                        // Add more options if needed
+                        Array.append(question.options, ["Option C"])
+                    };
+                    correctOptionIndex = if (question.correctOptionIndex < question.options.size()) {
+                        question.correctOptionIndex
+                    } else {
+                        0; // Default to first option if invalid
+                    };
+                    explanation = if (Text.size(question.explanation) > 0) { 
+                        question.explanation 
+                    } else { 
+                        "This is the correct answer." 
+                    };
+                };
+                
+                validatedQuestions := Array.append(validatedQuestions, [validatedQuestion]);
+            };
+        };
+        
+        validatedQuestions;
+    };
+
     // --- Main function to generate skill tree ---
     public func generateSkillCard(request : Types.SkillCardRequest, userId : Principal) : async Result.Result<Types.SkillCardGeneration, SkillCardError> {
-        // Optimized short prompt to fit 10KiB limit and produce 1000 token response
-        let systemPrompt = "Generate JSON for learning path. Format: {\"learningPath\":[{\"skillName\":\"name\",\"description\":\"desc\",\"iconName\":\"code\",\"dependencies\":[],\"questTitle\":\"title\",\"maxPoints\":100,\"questions\":[{\"text\":\"question?\",\"options\":[\"A\",\"B\",\"C\"],\"correctOptionIndex\":0,\"explanation\":\"why\"}]}]}. Create 3-5 skills, 2-3 questions each. No markdown.";
+        // Optimized prompt to fit 10KiB limit and produce 1000 token response
+        let systemPrompt = "You are a learning path generator. Create JSON for skill trees with 3-4 skills and 2-3 questions per skill. Format: {\"learningPath\":[{\"skillName\":\"skill name\",\"description\":\"brief description\",\"iconName\":\"code\",\"dependencies\":[],\"questTitle\":\"quest title\",\"maxPoints\":100,\"questions\":[{\"text\":\"clear question?\",\"options\":[\"A\",\"B\",\"C\"],\"correctOptionIndex\":0,\"explanation\":\"brief explanation\"}]}]}. Ensure correct answers match correctOptionIndex. Keep responses concise.";
+
+        let userPrompt = "Create learning path for: " # request.prompt # ". Focus on practical skills with clear, accurate questions. Each skill should have logical dependencies.";
 
         try {
             let llmResponse = await LLM.chat(#Llama3_1_8B).withMessages([
                 #system_ { content = systemPrompt },
-                #user {
-                    content = "Create a comprehensive learning path for: " # request.prompt;
-                },
+                #user { content = userPrompt },
             ]).send();
 
             switch (llmResponse.message.content) {
                 case (?content) {
+                    Debug.print("=== LLM RESPONSE ===");
+                    Debug.print("Content length: " # Nat.toText(Text.size(content)));
+                    Debug.print("Content: " # content);
+                    
                     // Use the new robust parser
                     switch(cleanAndParseJson(content)) {
                         case (#ok(llmResponse)) {
                             let generation = jsonToSkillCardGeneration(llmResponse, request, userId);
+                            Debug.print("=== GENERATION SUCCESS ===");
+                            Debug.print("Skills created: " # Nat.toText(generation.skillCards.size()));
+                            Debug.print("Quests created: " # Nat.toText(generation.quests.size()));
                             #ok(generation);
                         };
                         case (#err(parseError)) {
+                            Debug.print("=== PARSE ERROR ===");
+                            Debug.print("Error: " # parseError);
                             #err(#GenerationFailed(parseError));
                         };
                     };
@@ -382,6 +455,8 @@ module SkillCard {
                 };
             };
         } catch (e) {
+            Debug.print("=== LLM ERROR ===");
+            Debug.print("Error: " # Error.message(e));
             #err(#GenerationFailed("LLM request failed: " # Error.message(e)));
         };
     };
@@ -565,7 +640,13 @@ module SkillCard {
                 let dependenciesMet = checkDependencies(skill.dependencies, completedSkills);
 
                 if (dependenciesMet) {
-                    let updatedSkill = { skill with isUnlocked = true };
+                    // Mark skill as both unlocked and completed
+                    let updatedSkill = { 
+                        skill with 
+                        isUnlocked = true;
+                        isCompleted = true;
+                        currentPoints = skill.maxPoints; // Set current points to max points when completed
+                    };
                     let updatedSkills = Array.tabulate<Types.SkillNode>(
                         skillCard.skills.size(),
                         func(i) {
@@ -575,7 +656,11 @@ module SkillCard {
                         },
                     );
 
-                    let updatedCard = { skillCard with skills = updatedSkills };
+                    let updatedCard = { 
+                        skillCard with 
+                        skills = updatedSkills;
+                        completedPoints = skillCard.completedPoints + skill.maxPoints; // Update completed points
+                    };
                     #ok(updatedCard);
                 } else {
                     #err(#SkillNotUnlocked);

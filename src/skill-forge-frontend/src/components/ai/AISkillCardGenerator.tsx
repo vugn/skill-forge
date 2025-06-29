@@ -1,40 +1,10 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-    ArrowRight,
-    Award,
-    Book,
-    Brain,
-    Check,
-    CheckCircle,
-    Cloud,
-    Code,
-    Command,
-    Cpu,
-    Database,
-    Eye,
-    GitBranch,
-    Globe,
-    Layers,
-    Lock,
-    Monitor,
-    Package,
-    Palette,
-    PenTool,
-    Server,
-    Settings,
-    Shield,
-    Smartphone,
-    Star,
-    Target,
-    Terminal,
-    TrendingUp,
-    X,
-    Zap
-} from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, X, Code, Database, Zap, Palette, Smartphone, Globe, Brain, Layers, Shield, Target, Star, Settings, TrendingUp, Award, Cpu, Cloud, Lock, Eye, Check, Book, Server, Monitor, GitBranch, PenTool, Command, Terminal, Package, CheckCircle } from 'lucide-react';
 import { canisterService } from '../../services/canister';
 import { authService } from '../../services/auth';
 import { useAuth } from '../../hooks/useAuth';
+import LevelingTest from './test';
 
 // --- CUSTOM STYLES FOR CARD EFFECTS ---
 const cardStyles = `
@@ -1025,7 +995,8 @@ const AISkillCardGenerator: React.FC = () => {
                 </div>
             )}
             <div className="max-w-7xl mx-auto p-6 space-y-8">
-
+                {/* Leveling Test Component */}
+                <LevelingTest />
 
                 {/* Generator Input */}
                 <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 md:p-8">
@@ -1310,7 +1281,7 @@ const AISkillCardGenerator: React.FC = () => {
                                                         : selectedAnswer === index
                                                             ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400'
                                                             : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500 hover:bg-slate-700'
-                                                    }`}
+                                                }`}
                                             >
                                                 {option}
                                             </button>

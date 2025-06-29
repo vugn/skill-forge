@@ -35,9 +35,10 @@ export interface IAuthService {
     getPrincipal(): Principal | null;
     getPrincipalText(): string | null;
     getIdentity(): Identity | null;
-    getUserProfile(principal: string): Promise<UserProfile | null>;
+    getUserProfile(principal: string, forceRefresh?: boolean): Promise<UserProfile | null>;
     saveUserProfile(profile: UserProfile): Promise<void>;
     hasUserProfile(principal: string): Promise<boolean>;
+    clearProfileCache(principal: string): void;
     loadUserProfileFromStorage(principal: string): Promise<UserProfile | null>; // Add this if needed
     saveUserProfileToStorage(principal: string, profile: UserProfile): Promise<void>; // Add this if needed
 }

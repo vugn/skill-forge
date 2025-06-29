@@ -2,19 +2,19 @@
 
 > AI-Powered Skill Development Platform built on Internet Computer Protocol (ICP)
 
-**SkillForge** adalah platform pembelajaran berbasis AI yang revolusioner, dibangun di atas Internet Computer Protocol (ICP). Platform ini memungkinkan pengguna untuk membuat jalur pembelajaran yang dipersonalisasi dengan bantuan kecerdasan buatan, lengkap dengan skill tree interaktif, quest pembelajaran, dan sistem tracking progress yang komprehensif.
+**SkillForge** adalah platform pembelajaran berbasis AI yang revolusioner, dibangun di atas Internet Computer Protocol (ICP). Platform ini memungkinkan pengguna untuk membuat jalur pembelajaran yang dipersonalisasi dengan bantuan kecerdasan buatan, lengkap dengan skill card interaktif, quest pembelajaran, dan sistem tracking progress yang komprehensif.
 
 ## ✨ Key Features
 
 ### 🧠 AI-Powered Learning Path Generator
 
-- **Personalized Skill Trees**: Input career goal Anda dan AI akan membuat skill tree yang disesuaikan dengan tujuan dan background Anda
+- **Personalized skill cards**: Input career goal Anda dan AI akan membuat skill card yang disesuaikan dengan tujuan dan background Anda
 - **Smart Prioritization**: AI menganalisis tren industri untuk memprioritaskan skill yang paling penting
-- **Dynamic Adaptation**: Skill tree berkembang seiring dengan progress pembelajaran Anda
+- **Dynamic Adaptation**: skill card berkembang seiring dengan progress pembelajaran Anda
 
 ### 🎯 Interactive Learning Experience
 
-- **Visual Skill Trees**: Representasi visual yang menarik dari jalur pembelajaran dengan koneksi antar skill
+- **Visual skill cards**: Representasi visual yang menarik dari jalur pembelajaran dengan koneksi antar skill
 - **Interactive Quests**: Setiap skill dilengkapi dengan quest pembelajaran interaktif dan quiz
 - **Progress Tracking**: Sistem XP, level, dan achievement untuk memotivasi pembelajaran
 - **Real-time Updates**: Progress dan status skill ter-update secara real-time
@@ -113,16 +113,16 @@ npm run setup
 - Authenticate menggunakan Internet Identity
 - Setup profile dengan nama dan foto profil
 
-### 2. **Generate AI Skill Tree**
+### 2. **Generate AI skill card**
 
 - Navigate ke "Skills" page
 - Input career goal Anda (contoh: "Frontend Developer", "Data Scientist")
-- AI akan generate comprehensive skill tree dengan prerequisites dan learning path
-- Review dan accept skill tree yang digenerate
+- AI akan generate comprehensive skill card dengan prerequisites dan learning path
+- Review dan accept skill card yang digenerate
 
 ### 3. **Start Learning**
 
-- Akses skill tree melalui dashboard
+- Akses skill card melalui dashboard
 - Klik pada available skills untuk memulai quest
 - Complete quiz dan interactive challenges
 - Earn XP dan unlock new skills
@@ -144,7 +144,7 @@ skill-forge/
 │       ├── src/
 │       │   ├── components/           # React components
 │       │   │   ├── ai/              # AI-related components
-│       │   │   ├── dashboard/       # Dashboard dan skill tree
+│       │   │   ├── dashboard/       # Dashboard dan skill card
 │       │   │   ├── profile/         # User profile management
 │       │   │   ├── skills/          # Skills dan learning paths
 │       │   │   └── ui/              # Reusable UI components
@@ -160,13 +160,13 @@ skill-forge/
 
 ## 🎯 Core Components
 
-### AI Skill Tree Generator (`/skills`)
+### AI Skill Cards Generator (`/skills`)
 
 Komponen utama yang memungkinkan user untuk:
 
 - Input career goals dan background
-- Generate personalized skill trees menggunakan AI
-- Preview dan customize skill trees sebelum accept
+- Generate personalized skill cards menggunakan AI
+- Preview dan customize skill cards sebelum accept
 - View detailed skill information dan prerequisites
 
 ### Interactive Dashboard (`/dashboard`)
@@ -174,7 +174,7 @@ Komponen utama yang memungkinkan user untuk:
 Central hub yang menampilkan:
 
 - User profile dan learning statistics
-- Interactive skill tree canvas dengan zoom dan drag functionality
+- Interactive skill card canvas dengan zoom dan drag functionality
 - Progress tracking dan XP system
 - Quick access ke available skills dan quests
 
@@ -182,7 +182,7 @@ Central hub yang menampilkan:
 
 Detailed view untuk setiap learning path:
 
-- Full-screen interactive skill tree
+- Full-screen interactive skill card
 - Skill sidebar dengan detailed information
 - Quest modal dengan interactive quizzes
 - Progress tracking dan completion management
@@ -193,7 +193,7 @@ Comprehensive profile management:
 
 - Personal information editing
 - Learning statistics overview
-- Skill trees progress tracking
+- skill cards progress tracking
 - Achievement system
 
 ## 🎨 Design System

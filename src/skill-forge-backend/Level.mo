@@ -1,4 +1,6 @@
 import Types "./Types";
+import Debug "mo:base/Debug";
+import Nat "mo:base/Nat";
 
 module {
     // Safe subtraction for Nat
@@ -6,13 +8,13 @@ module {
         if (a >= b) { a - b } else { 0 };
     };
 
-    // Experience required for each level (exponential growth)
+    // Experience required for each level (more reasonable for testing)
     public func getExpRequiredForLevel(level: Nat): Nat {
         if (level <= 1) {
             return 0;
         };
-        // Formula: level^2 * 100 (can be adjusted)
-        level * level * 100;
+        // Formula: level * 50 (more reasonable progression)
+        level * 50;
     };
 
     // Calculate total experience required to reach a specific level
@@ -43,17 +45,18 @@ module {
     public func getLevelInfo(totalExp: Nat): Types.LevelInfo {
         let level = calculateLevelFromExp(totalExp);
         let expForCurrentLevel = getTotalExpForLevel(level);
-        let expForNextLevel = getTotalExpForLevel(level + 1);
+        let expRequiredForNextLevel = getExpRequiredForLevel(level + 1);
         
-        // Safe subtraction to avoid trapping
+        // Calculate current XP within the level (how much progress toward next level)
         let currentExp = if (totalExp >= expForCurrentLevel) {
             safeSub(totalExp, expForCurrentLevel);
         } else {
             0;
         };
         
-        let expToNextLevel = if (expForNextLevel >= totalExp) {
-            safeSub(expForNextLevel, totalExp);
+        // Calculate how much XP is still needed for next level
+        let expToNextLevel = if (currentExp < expRequiredForNextLevel) {
+            safeSub(expRequiredForNextLevel, currentExp);
         } else {
             0;
         };
@@ -74,6 +77,16 @@ module {
         let leveledUp = newLevel > oldLevel;
         let newLevelInfo = getLevelInfo(newTotalExp);
         
+        Debug.print("=== LEVEL CALCULATION DEBUG ===");
+        Debug.print("Old total exp: " # Nat.toText(currentTotalExp));
+        Debug.print("Exp to add: " # Nat.toText(expToAdd));
+        Debug.print("New total exp: " # Nat.toText(newTotalExp));
+        Debug.print("Old level: " # Nat.toText(oldLevel));
+        Debug.print("New level: " # Nat.toText(newLevel));
+        Debug.print("Leveled up: " # debug_show(leveledUp));
+        Debug.print("New level info: " # debug_show(newLevelInfo));
+        Debug.print("================================");
+        
         {
             newLevel = newLevel;
             expGained = expToAdd;
@@ -88,6 +101,7 @@ module {
             case ("daily_login") { 10 };
             case ("skill_completion") { 50 };
             case ("quiz_passed") { 25 };
+            case ("quest_completion") { 30 };
             case ("course_completed") { 100 };
             case ("achievement_unlocked") { 75 };
             case ("profile_completed") { 20 };

@@ -74,10 +74,17 @@ class AuthService implements IAuthService {
         }
     }
 
+    /**
+     * Clear cached user profile (force refresh from backend)
+     */
+    clearProfileCache(principal: string): void {
+        this.userProfiles.delete(principal);
+        console.log('🗑️ Cleared profile cache for:', principal);
+    }
 
     /**
- * Save user profile to localStorage
- */
+     * Save user profile to localStorage
+     */
     async saveUserProfileToStorage(principal: string, profile: UserProfile): Promise<void> {
         try {
             const key = `skillforge_profile_${principal}`;
@@ -120,12 +127,15 @@ class AuthService implements IAuthService {
     /**
      * Get user profile from canister first, then fallback to cache/storage
      */
-    async getUserProfile(principal: string): Promise<UserProfile | null> {
-        // First check memory cache
-        const cached = this.userProfiles.get(principal);
-        if (cached) {
-            console.log('Using cached profile for:', principal);
-            return cached;
+    async getUserProfile(principal: string, forceRefresh: boolean = false): Promise<UserProfile | null> {
+        // Skip cache if force refresh is requested
+        if (!forceRefresh) {
+            // First check memory cache
+            const cached = this.userProfiles.get(principal);
+            if (cached) {
+                console.log('Using cached profile for:', principal);
+                return cached;
+            }
         }
 
         // Try to get from canister first if authenticated
@@ -149,11 +159,13 @@ class AuthService implements IAuthService {
             }
         }
 
-        // Fallback to localStorage
-        const stored = await this.loadUserProfileFromStorage(principal);
-        if (stored) {
-            console.log('Using stored profile for:', principal);
-            return stored;
+        // Fallback to localStorage only if not force refresh
+        if (!forceRefresh) {
+            const stored = await this.loadUserProfileFromStorage(principal);
+            if (stored) {
+                console.log('Using stored profile for:', principal);
+                return stored;
+            }
         }
 
         console.log('No user profile found for principal:', principal);

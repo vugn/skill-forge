@@ -347,6 +347,25 @@ export class CanisterService {
             throw new Error(result.err);
         }
     }
+
+    async testLeveling(): Promise<{ oldLevel: number; newLevel: number; expGained: number; leveledUp: boolean }> {
+        if (!this.actor) {
+            throw new Error('Canister service not initialized');
+        }
+
+        const result = await this.actor.testLeveling();
+        
+        if ('ok' in result) {
+            return {
+                oldLevel: Number(result.ok.oldLevel),
+                newLevel: Number(result.ok.newLevel),
+                expGained: Number(result.ok.expGained),
+                leveledUp: result.ok.leveledUp,
+            };
+        } else {
+            throw new Error(result.err);
+        }
+    }
 }
 
 export const canisterService = new CanisterService();

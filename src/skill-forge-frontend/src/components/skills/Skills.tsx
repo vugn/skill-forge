@@ -16,7 +16,7 @@ const Skills: React.FC = () => {
                         className="text-center mb-12"
                     >
                         <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6">
-                            AI Skill Tree <span className="text-gold">Generator</span>
+                            AI Skill Card <span className="text-gold">Generator</span>
                         </h1>
                         <p className="text-lg text-gray-300 max-w-2xl mx-auto">
                             Input your career goal and let our AI create a personalized learning path with interactive quests.

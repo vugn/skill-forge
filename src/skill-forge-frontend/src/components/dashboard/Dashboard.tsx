@@ -28,9 +28,10 @@ import {
     Book,
     Star,
     CheckCircle,
-    Lock
+    Lock,
+    RefreshCw
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks';
 import { formatJoinDate } from '../../utils';
@@ -38,6 +39,20 @@ import { canisterService } from '../../services/canister';
 import { authService } from '../../services/auth';
 import DashboardNavbar from './DashboardNavbar';
 
+// Helper function to safely convert BigInt to number
+const safeBigIntToNumber = (value: any): number => {
+    if (typeof value === 'bigint') {
+        return Number(value);
+    }
+    if (typeof value === 'number') {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+};
 
 const ICON_MAP = {
     globe: Globe,
@@ -91,7 +106,7 @@ interface CardPosition {
 const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
     const [skillCards, setSkillCards] = useState<SkillCard[]>([]);
     const [viewportPosition, setViewportPosition] = useState({ x: 0, y: 0 });
-    const [, setIsDragging] = useState(false);
+    const [zoom, setZoom] = useState(1);
     const [cardPositions, setCardPositions] = useState<Record<string, CardPosition>>({});
 
     // Helper functions outside useEffect to avoid dependency issues
@@ -117,7 +132,6 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
 
     const generateCardPositions = (cards: SkillCard[]) => {
         const positions: Record<string, CardPosition> = {};
-        // Safe check for window object (SSR compatibility)
         const baseGridSize = typeof window !== 'undefined' && window.innerWidth < 640 ? 200 : 280;
         const cols = Math.ceil(Math.sqrt(cards.length * 1.5)); // More spread out
         
@@ -126,7 +140,7 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
             const col = index % cols;
             
             // Add some randomness to make it more organic, but less on mobile
-            const randomRange = typeof window !== 'undefined' && window.innerWidth < 640 ? 50 : 100;
+            const randomRange = typeof window !== 'undefined' && window.innerWidth < 640 ? 30 : 60;
             const randomOffsetX = (Math.random() - 0.5) * randomRange;
             const randomOffsetY = (Math.random() - 0.5) * randomRange;
             
@@ -218,17 +232,17 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
         // If we have user skills from backend, use them
         let cards: SkillCard[] = [];
         if (userSkills && userSkills.length > 0) {
-            // Transform backend skills to card format
+            // Transform backend skills to card format with safe BigInt conversion
             cards = userSkills.map((skill, index) => ({
                 id: skill.id || `skill-${index}`,
                 name: skill.name,
                 description: skill.description || 'A valuable skill to master',
                 iconName: (skill.iconName || getRandomIcon()) as keyof typeof ICON_MAP,
                 rarity: (skill.rarity || getRandomRarity()) as 'common' | 'rare' | 'epic' | 'legendary',
-                isCompleted: skill.completed || false,
-                isUnlocked: skill.unlocked || true,
-                currentPoints: skill.currentXP || 0,
-                maxPoints: skill.requiredXP || 100,
+                isCompleted: skill.isCompleted || false,
+                isUnlocked: skill.isUnlocked || true,
+                currentPoints: safeBigIntToNumber(skill.currentPoints) || 0,
+                maxPoints: safeBigIntToNumber(skill.maxPoints) || 100,
                 category: skill.category || 'General'
             }));
         } else {
@@ -241,6 +255,22 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
         const positions = generateCardPositions(cards);
         setCardPositions(positions);
     }, [userSkills]);
+
+    // Zoom functions
+    const handleZoomIn = () => {
+        setZoom(prev => Math.min(prev + 0.2, 2.5));
+    };
+
+    const handleZoomOut = () => {
+        setZoom(prev => Math.max(prev - 0.2, 0.5));
+    };
+
+    const handleResetView = () => {
+        setViewportPosition({ x: 0, y: 0 });
+        setZoom(1);
+        const positions = generateCardPositions(skillCards);
+        setCardPositions(positions);
+    };
 
     // Safety check for empty cards
     if (skillCards.length === 0) {
@@ -289,8 +319,6 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
                 drag
                 dragMomentum={false}
                 dragConstraints={false}
-                onDragStart={() => setIsDragging(true)}
-                onDragEnd={() => setIsDragging(false)}
                 onDrag={(_, info) => {
                     setViewportPosition(prev => ({
                         x: prev.x + info.delta.x,
@@ -298,7 +326,8 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
                     }));
                 }}
                 style={{
-                    transform: `translate(${viewportPosition.x}px, ${viewportPosition.y}px)`
+                    transform: `translate(${viewportPosition.x}px, ${viewportPosition.y}px) scale(${zoom})`,
+                    transformOrigin: 'center'
                 }}
             >
                 {/* Grid Background */}
@@ -309,8 +338,8 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
                             linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
                         `,
-                        backgroundSize: '50px 50px',
-                        transform: `translate(${viewportPosition.x % 50}px, ${viewportPosition.y % 50}px)`
+                        backgroundSize: `${50 * zoom}px ${50 * zoom}px`,
+                        transform: `translate(${viewportPosition.x % (50 * zoom)}px, ${viewportPosition.y % (50 * zoom)}px)`
                     }}
                 />
 
@@ -332,16 +361,25 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
                             }}
                             drag
                             dragMomentum={false}
-                            dragConstraints={false}
-                            dragElastic={0}
+                            dragConstraints={{
+                                left: -1000,
+                                right: 1000,
+                                top: -1000,
+                                bottom: 1000
+                            }}
+                            dragElastic={0.1}
                             onDragEnd={(_, info) => {
-                                // Update position only on drag end to prevent conflicts
+                                // Constrain movement to prevent cards from going too far
+                                const maxDistance = 500;
+                                const deltaX = info.offset.x;
+                                const deltaY = info.offset.y;
+                                
+                                const newX = Math.max(-maxDistance, Math.min(maxDistance, position.x + deltaX));
+                                const newY = Math.max(-maxDistance, Math.min(maxDistance, position.y + deltaY));
+                                
                                 setCardPositions(prev => ({
                                     ...prev,
-                                    [card.id]: {
-                                        x: position.x + info.offset.x,
-                                        y: position.y + info.offset.y
-                                    }
+                                    [card.id]: { x: newX, y: newY }
                                 }));
                             }}
                             whileHover={{ 
@@ -473,8 +511,32 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
                 })}
             </motion.div>
 
+            {/* Zoom Controls */}
+            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-slate-600">
+                <div className="text-xs text-slate-300 mb-2 font-semibold">Zoom Controls</div>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={handleZoomOut}
+                        disabled={zoom <= 0.5}
+                        className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-2 py-1 rounded text-xs font-semibold transition-colors"
+                    >
+                        -
+                    </button>
+                    <span className="text-xs text-slate-300 px-2 py-1">
+                        {Math.round(zoom * 100)}%
+                    </span>
+                    <button
+                        onClick={handleZoomIn}
+                        disabled={zoom >= 2.5}
+                        className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-2 py-1 rounded text-xs font-semibold transition-colors"
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
+
             {/* Controls Overlay */}
-            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-slate-600 max-w-[180px] sm:max-w-none">
+            <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-slate-600 max-w-[180px] sm:max-w-none" style={{ top: '80px' }}>
                 <div className="text-xs text-slate-300 mb-1 font-semibold">Skill Map</div>
                 <div className="text-xs text-slate-400 space-y-1">
                     <div className="hidden sm:block">🖱️ Drag background to pan</div>
@@ -491,11 +553,7 @@ const SkillCardDeck: React.FC<SkillCardDeckProps> = ({ userSkills = [] }) => {
             {/* Reset View Button */}
             <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
                 <button
-                    onClick={() => {
-                        setViewportPosition({ x: 0, y: 0 });
-                        const positions = generateCardPositions(skillCards);
-                        setCardPositions(positions);
-                    }}
+                    onClick={handleResetView}
                     className="bg-slate-700 hover:bg-slate-600 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs font-semibold transition-colors border border-slate-600"
                 >
                     <span className="hidden sm:inline">Reset View</span>
@@ -532,78 +590,96 @@ const Dashboard: React.FC = () => {
     const [levelInfo, setLevelInfo] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
+    // Function to load user data
+    const loadUserData = useCallback(async () => {
+        if (!isAuthenticated) return;
+
+        try {
+            setLoading(true);
+            
+            // Initialize canister service with the current identity
+            const identity = authService.getIdentity();
+            if (!identity) {
+                return;
+            }
+            
+            await canisterService.init(identity);
+            
+            // Load skill cards
+            const userCards = await canisterService.getUserSkillCards();
+            
+            // Extract all skills from all cards with safe access
+            const allSkills = userCards?.flatMap(card => card?.skills || []) || [];
+            setUserSkills(allSkills);
+            console.log('Dashboard: Loaded skills:', allSkills);
+            console.log('Dashboard: Completed skills count:', allSkills.filter(skill => skill?.isCompleted)?.length);
+
+            // Load level info
+            try {
+                const levelInfoResult = await canisterService.getLevelInfo();
+                const levelData = {
+                    level: safeBigIntToNumber(levelInfoResult.level),
+                    currentExp: safeBigIntToNumber(levelInfoResult.currentExp),
+                    expToNextLevel: safeBigIntToNumber(levelInfoResult.expToNextLevel),
+                    totalExp: safeBigIntToNumber(levelInfoResult.totalExp)
+                };
+                setLevelInfo(levelData);
+                console.log('Dashboard: Level info updated:', levelData);
+            } catch (error) {
+                console.error('Failed to load level info:', error);
+                // Use fallback data if level info fails
+                setLevelInfo(null);
+            }
+        } catch (error) {
+            // Don't show error for "User not found" - this is expected for new users
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (!errorMessage.includes('User not found')) {
+                console.warn('Failed to load your skill trees:', errorMessage);
+            }
+            // Set empty array on error to show demo cards
+            setUserSkills([]);
+            setLevelInfo(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated]);
+
     // Load user's skill trees and level info on component mount
     useEffect(() => {
-        const loadUserData = async () => {
-            if (!isAuthenticated) return;
-
-            try {
-                setLoading(true);
-                // Initialize canister service with the current identity
-                const identity = authService.getIdentity();
-                if (!identity) {
-                    console.warn('No identity available');
-                    return;
-                }
-                
-                await canisterService.init(identity);
-                
-                // Load skill cards
-                const userCards = await canisterService.getUserSkillCards();
-                
-                // Extract all skills from all cards with safe access
-                const allSkills = userCards?.flatMap(card => card?.skills || []) || [];
-                setUserSkills(allSkills);
-
-                // Load level info
-                try {
-                    const levelInfoResult = await canisterService.getLevelInfo();
-                    setLevelInfo({
-                        level: Number(levelInfoResult.level),
-                        currentExp: Number(levelInfoResult.currentExp),
-                        expToNextLevel: Number(levelInfoResult.expToNextLevel),
-                        totalExp: Number(levelInfoResult.totalExp)
-                    });
-                } catch (levelError) {
-                    console.error('Failed to load level info:', levelError);
-                    // Use fallback data if level info fails
-                    setLevelInfo(null);
-                }
-            } catch (error) {
-                console.error('Failed to load skill trees:', error);
-                // Don't show error for "User not found" - this is expected for new users
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                if (!errorMessage.includes('User not found')) {
-                    console.warn('Failed to load your skill trees:', errorMessage);
-                }
-                // Set empty array on error to show demo cards
-                setUserSkills([]);
-                setLevelInfo(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         if (isAuthenticated) {
             loadUserData();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, loadUserData]);
+
+    // Refresh data when user profile changes
+    useEffect(() => {
+        if (user) {
+            console.log('Dashboard: User profile changed, refreshing data');
+            loadUserData();
+        }
+    }, [user, loadUserData]);
     
-    // User data dengan data sebenarnya dari backend
+    // Calculate proper XP display values
+    const currentExp = levelInfo?.currentExp || 0; // Current XP in this level (e.g., 250)
+    const expToNextLevel = levelInfo?.expToNextLevel || 100; // Remaining XP needed (e.g., 150)
+    const totalExpForNextLevel = currentExp + expToNextLevel; // Total XP needed for next level (e.g., 400)
+
+    // User data dengan data backend langsung
     const userData = {
         name: user?.fullName || 'SkillForge User',
         username: user?.username || 'user',
         joinDate: user?.createdAt ? formatJoinDate(user.createdAt) : 'Baru bergabung',
-        level: levelInfo?.level || user?.level || 1,
-        currentXP: levelInfo?.currentExp || user?.experience || 0,
-        nextLevelXP: levelInfo?.expToNextLevel || 100, // Use real data from backend
-        totalXP: levelInfo?.totalExp || user?.totalExperience || 0,
+        level: levelInfo?.level || 1, // Use backend level
+        currentXP: currentExp, // Current XP in this level
+        totalExpForNextLevel: totalExpForNextLevel, // Total XP needed for next level
+        expToNextLevel: expToNextLevel, // Remaining XP needed
+        totalXP: levelInfo?.totalExp || 0, // Total lifetime XP
         skillsCompleted: userSkills?.filter(skill => skill?.isCompleted)?.length || 0,
         avatar: user?.profilePicture || '/api/placeholder/150/150'
     };
 
-    const xpProgress = userData.nextLevelXP > 0 
-        ? (userData.currentXP / userData.nextLevelXP) * 100 
+    const xpProgress = userData.totalExpForNextLevel > 0 
+        ? (userData.currentXP / userData.totalExpForNextLevel) * 100 
         : 0;
 
     return (
@@ -650,22 +726,23 @@ const Dashboard: React.FC = () => {
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-white font-semibold">Level {userData.level}</span>
                                     <span className="text-gray-300 text-sm">
-                                        {userData.currentXP.toLocaleString()} / {userData.nextLevelXP.toLocaleString()} XP
+                                        {userData.currentXP.toLocaleString()} / {userData.totalExpForNextLevel.toLocaleString()} XP
                                     </span>
                                 </div>
                                 <div className="w-full bg-white/10 rounded-full h-4 mb-4">
                                     <motion.div
                                         initial={{ width: 0 }}
-                                        animate={{ width: `${xpProgress}%` }}
+                                        animate={{ width: `${Math.min(100, Math.max(0, xpProgress))}%` }}
                                         transition={{ duration: 1, delay: 0.5 }}
                                         className="bg-gradient-to-r from-gold to-yellow-400 h-4 rounded-full relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
                                     </motion.div>
                                 </div>
-                                <p className="text-gray-300 text-sm">
-                                    {userData.nextLevelXP - userData.currentXP} XP to next level
-                                </p>
+                                <div className="flex justify-between text-sm text-gray-300">
+                                    <span>{userData.expToNextLevel.toLocaleString()} XP to next level</span>
+                                    <span>Total: {userData.totalXP.toLocaleString()} XP</span>
+                                </div>
                             </div>
 
                             {/* Skills Stat */}
@@ -678,6 +755,18 @@ const Dashboard: React.FC = () => {
                                     <div className="text-xl font-bold text-white">{userData.skillsCompleted}</div>
                                     <div className="text-xs text-gray-300">Skills Learned</div>
                                 </Link>
+                            </div>
+
+                            {/* Manual Refresh Button for Testing */}
+                            <div className="text-center">
+                                <button
+                                    onClick={loadUserData}
+                                    disabled={loading}
+                                    className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors cursor-pointer block disabled:opacity-50"
+                                >
+                                    <RefreshCw className={`w-6 h-6 text-gold mx-auto mb-2 ${loading ? 'animate-spin' : ''}`} />
+                                    <div className="text-xs text-gray-300">Refresh Data</div>
+                                </button>
                             </div>
                         </div>
                     </motion.div>

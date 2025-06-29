@@ -43,14 +43,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Load user profile from backend first, then fallback to storage
    */
-  const loadUserProfile = async (): Promise<void> => {
+  const loadUserProfile = async (forceRefresh: boolean = false): Promise<void> => {
     setCheckingProfile(true);
     try {
       const principal = authService.getPrincipalText();
       console.log('📋 Loading profile for principal:', principal);
       if (principal) {
         // Try to get user profile from backend first
-        const profile = await authService.getUserProfile(principal);
+        const profile = await authService.getUserProfile(principal, forceRefresh);
         console.log('👤 Profile loaded:', profile);
         setUser(profile);
       }
@@ -62,11 +62,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   /**
-   * Refresh user profile from backend
+   * Refresh user profile from backend with retry mechanism
    */
   const refreshUserProfile = async (): Promise<void> => {
     if (isAuthenticated) {
-      await loadUserProfile();
+      // Clear cache to force fresh data from backend
+      const principal = authService.getPrincipalText();
+      if (principal) {
+        authService.clearProfileCache(principal);
+      }
+      
+      // Retry mechanism for backend consistency
+      let retries = 3;
+      let delay = 500;
+      
+      while (retries > 0) {
+        try {
+          await loadUserProfile(true); // Force refresh from backend
+          console.log('✅ Profile refreshed successfully');
+          break; // Success, exit retry loop
+        } catch (error) {
+          retries--;
+          if (retries > 0) {
+            console.log(`⏳ Profile refresh failed, retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+          } else {
+            console.error('❌ Failed to refresh profile after all retries:', error);
+            throw error;
+          }
+        }
+      }
     }
   };
 
